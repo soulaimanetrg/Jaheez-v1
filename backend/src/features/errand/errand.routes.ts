@@ -1,0 +1,25 @@
+import { Router } from 'express';
+import { adminAuth } from '../../middleware/auth.middleware';
+import { requireRole } from '../../middleware/admin.middleware';
+import { verifySupabaseJwt } from '../../middleware/supabaseJwt.middleware';
+import { driverAuth } from '../../middleware/driver.middleware';
+import { validate } from '../../middleware/validate.middleware';
+import { errandOrderLimiter } from '../../middleware/rateLimit.middleware';
+import { ErrandController } from './errand.controller';
+import { adminErrandDisputeSchema,adminErrandQuoteSchema,adminErrandReviewSchema,errandDraftSchema,errandDraftUpdateSchema,errandIdParamsSchema,errandProofSchema,errandQuoteParamsSchema,errandQuoteSchema,errandSubmitSchema,quoteIdParamsSchema,storeConflictSchema } from './errand.validators';
+
+const router=Router();const controller=new ErrandController();
+router.get('/v1/customer/errands/availability',verifySupabaseJwt,controller.availability);
+router.post('/v1/customer/errands/drafts',verifySupabaseJwt,errandOrderLimiter,validate(errandDraftSchema),controller.createDraft);
+router.patch('/v1/customer/errands/:id',verifySupabaseJwt,validate({params:errandIdParamsSchema,body:errandDraftUpdateSchema}),controller.updateDraft);
+router.post('/v1/customer/errands/:id/quote',verifySupabaseJwt,errandOrderLimiter,validate({params:errandIdParamsSchema,body:errandQuoteSchema}),controller.quote);
+router.get('/v1/customer/errands/:id/quotes/:quoteId',verifySupabaseJwt,validate({params:errandQuoteParamsSchema}),controller.getQuote);
+router.post('/v1/customer/errands/:id/submit',verifySupabaseJwt,errandOrderLimiter,validate({params:errandIdParamsSchema,body:errandSubmitSchema}),controller.submit);
+router.post('/v1/customer/errands/store-conflict',verifySupabaseJwt,errandOrderLimiter,validate(storeConflictSchema),controller.storeConflict);
+router.post('/driver/errands/:id/proofs',driverAuth,errandOrderLimiter,validate({params:errandIdParamsSchema,body:errandProofSchema}),controller.uploadDriverProof);
+router.get('/errands',adminAuth,requireRole('super_admin','operations'),controller.listAdmin);
+router.get('/errands/manual-quotes',adminAuth,requireRole('super_admin','operations'),controller.listManualQuotes);
+router.post('/errands/manual-quotes/:quoteId',adminAuth,requireRole('super_admin','operations'),validate({params:quoteIdParamsSchema,body:adminErrandQuoteSchema}),controller.adjustManualQuote);
+router.post('/errands/:id/review',adminAuth,requireRole('super_admin','operations'),validate({params:errandIdParamsSchema,body:adminErrandReviewSchema}),controller.reviewAdmin);
+router.post('/errands/:id/dispute',adminAuth,requireRole('super_admin','operations'),validate({params:errandIdParamsSchema,body:adminErrandDisputeSchema}),controller.openAdminDispute);
+export default router;

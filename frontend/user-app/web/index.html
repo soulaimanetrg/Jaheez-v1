@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="fr" dir="ltr">
+  <head>
+    <meta charset="utf-8" />
+    <meta httpEquiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+    <title>JAHEEZ — جاهز</title>
+    <style>
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+
+      html, body {
+        width: 100%;
+        height: 100%;
+        background-color: #0A0A12;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      }
+
+      #root {
+        width: 100%;
+        height: 100%;
+      }
+
+      /* Loading screen — visible until React mounts and replaces this content */
+      #splash-loader {
+        position: fixed;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(160deg, #0B0C1E 0%, #1A0606 40%, #7F0000 80%, #C62828 100%);
+        z-index: 9999;
+        transition: opacity 0.3s ease;
+      }
+
+      #splash-loader.hidden {
+        opacity: 0;
+        pointer-events: none;
+      }
+
+      .splash-logo {
+        font-size: 52px;
+        font-weight: 900;
+        color: #F2C94C;
+        letter-spacing: -1px;
+        margin-bottom: 6px;
+      }
+
+      .splash-logo-ar {
+        font-size: 20px;
+        color: rgba(255,255,255,0.65);
+        margin-bottom: 48px;
+      }
+
+      .spinner {
+        width: 36px;
+        height: 36px;
+        border: 3px solid rgba(255,255,255,0.15);
+        border-top-color: #EF4444;
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+      }
+
+      @keyframes spin {
+        to { transform: rotate(360deg); }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="splash-loader">
+      <div class="splash-logo">JaheeZ</div>
+      <div class="splash-logo-ar">جاهز</div>
+      <div class="spinner"></div>
+    </div>
+
+    <div id="root"></div>
+
+    <script>
+      // Hide the native loader once React has mounted
+      (function () {
+        var observer = new MutationObserver(function () {
+          var root = document.getElementById('root');
+          if (root && root.children.length > 0) {
+            var loader = document.getElementById('splash-loader');
+            if (loader) {
+              loader.classList.add('hidden');
+              setTimeout(function () { loader.remove(); }, 350);
+            }
+            observer.disconnect();
+          }
+        });
+        observer.observe(document.getElementById('root'), { childList: true });
+      })();
+    </script>
+  </body>
+</html>

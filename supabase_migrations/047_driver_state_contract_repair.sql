@@ -1,0 +1,5 @@
+ALTER TABLE public.drivers DROP CONSTRAINT IF EXISTS drivers_state_check;
+ALTER TABLE public.drivers ADD CONSTRAINT drivers_state_check CHECK (state IN (
+  'OFFLINE','AVAILABLE','OFFERED','ACCEPTED','PICKED_UP','PICKUP','DELIVERING',
+  'COOLDOWN','FORCED_BREAK','SUSPENDED'
+));

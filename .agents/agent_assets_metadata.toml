@@ -1,0 +1,8 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "lAKDDgOFUtr9GqoIfGw7q"
+uri = "file://JAHEEZ_ARCHITECTURE.md"
+type = "text"
+title = "JAHEEZ — Full Platform Architecture Document"

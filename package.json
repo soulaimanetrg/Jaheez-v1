@@ -1,0 +1,30 @@
+{
+  "scripts": {
+    "redis:docker": "docker run --name jaheez-redis -p 6379:6379 -d redis:7 || docker start jaheez-redis",
+    "verify:local": "node scripts/local-release-gates.js",
+    "security:strict-boundary": "node scripts/check-strict-frontend-boundary.js",
+    "verify:staging": "npm run staging:full --prefix backend",
+    "staging:init-env": "npm run staging:init-env --prefix backend",
+    "staging:import-access": "npm run staging:import-access --prefix backend",
+    "staging:access-status": "npm run staging:access-status --prefix backend",
+    "staging:preflight": "npm run readiness:preflight --prefix backend",
+    "staging:full": "npm run staging:full --prefix backend",
+    "staging:devices": "npm run staging:devices --prefix backend",
+    "staging:start-emulators": "node scripts/start-jaheez-emulators.js",
+    "staging:verify-signoff": "npm run staging:verify-signoff --prefix backend --",
+    "staging:access-pack": "npm run staging:access-pack --prefix backend --",
+    "readiness:status": "node scripts/readiness-status.js"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.105.1",
+    "bcryptjs": "^3.0.3",
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "jsonwebtoken": "^9.0.3",
+    "pg": "^8.20.0"
+  },
+  "overrides": {
+    "ws": "^8.21.0"
+  }
+}

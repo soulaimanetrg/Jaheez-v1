@@ -1,0 +1,16 @@
+{
+  "PRODUCTION_DATABASE_URL": "postgresql://user:password@production-host:5432/postgres",
+  "STAGING_DATABASE_URL": "postgresql://user:password@staging-host:5432/postgres",
+  "STAGING_SUPABASE_URL": "https://your-staging-project.supabase.co",
+  "STAGING_SERVICE_ROLE_KEY": "your-staging-service-role-key",
+  "STAGING_ANON_KEY": "your-staging-anon-key",
+  "STAGING_API_BASE": "https://staging-api.example.com",
+  "STAGING_TEST_ADMIN_ID": "00000000-0000-0000-0000-000000000000",
+  "STAGING_TEST_DRIVER_ID": "00000000-0000-0000-0000-000000000000",
+  "STAGING_TEST_DRIVER_CIN": "TEST-CIN-ONLY",
+  "STAGING_TEST_ORDER_ID": "00000000-0000-0000-0000-000000000000",
+  "STAGING_PREPAY_REFUND_ORDER_ID": "00000000-0000-0000-0000-000000000000",
+  "STAGING_STORE_API_KEY": "stg_store_key_replace_me",
+  "STAGING_OTHER_STORE_ORDER_ID": "00000000-0000-0000-0000-000000000000",
+  "STAGING_CUSTOMER_ACCESS_TOKEN": "replace-with-staging-customer-jwt"
+}

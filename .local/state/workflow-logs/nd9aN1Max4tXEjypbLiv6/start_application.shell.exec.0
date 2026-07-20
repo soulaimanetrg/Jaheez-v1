@@ -1,0 +1,38 @@
+[1] 2698
+[JAHEEZ proxy] :5000 → Metro :8081 | Admin :3000 (/admin/*) | Driver :8000 (/driver/*)
+[1G[0K⠙[1G[0K[90mStarting project at /home/runner/workspace/user-app[39m
+[2mStarting Metro Bundler[22m
+
+[33mwarning[39m: Bundler cache is empty, rebuilding [2m(this may take a minute)[22m
+[31m[7m[1m ERROR [22m[27m[39m An unknown error occurred while installing React Native DevTools. Details:
+
+/home/runner/workspace/user-app/node_modules/@react-native/debugger-shell/bin/react-native-devtools: error while loading shared libraries: libglib-2.0.so.0: cannot open shared object file: No such file or directory
+
+[33mThe following packages should be updated for best compatibility with the installed [1mexpo[22m version:[39m
+[33m  [1mreact-native-reanimated[22m[36m@[39m[33m[31m3.15.5[39m[33m - expected version: [32m4.2.1[39m[33m[39m
+[33m  [1mreact-native-worklets[22m[36m@[39m[33m[31m0.8.1[39m[33m - expected version: [32m0.7.4[39m[33m[39m
+[33mYour project may not work correctly until you install the expected versions of the packages.[39m
+▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄
+█ ▄▄▄▄▄ █ ██▀▀▀▀▄▀█ ▄▄▄▄▄ █
+█ █   █ █  ▀█ ▀▄ ▄█ █   █ █
+█ █▄▄▄█ █▀  █▄ █▄██ █▄▄▄█ █
+█▄▄▄▄▄▄▄█▄█ ▀▄█▄█▄█▄▄▄▄▄▄▄█
+█  ██ ▄▄█▀█▄█▄█▄ ███ ▀▄▄ ▄█
+██   ▀█▄█  ▄█▀▄█ █▀ █▄  ▀██
+█▀ ▄▄ █▄█ █▀▄▀█▄▀▄▀▄▀▀▄ ▀██
+████▄ █▄▄█ ▄ ▄██  ▄▀ ▄ ▀███
+█▄▄▄▄█▄▄█▀███▄▀▄  ▄▄▄ ▀ ▄▄█
+█ ▄▄▄▄▄ █▀ ██▀██▀ █▄█ ▀▀▀██
+█ █   █ █▄ █▄ █▄█ ▄ ▄▄▀ ▀▀█
+█ █▄▄▄█ █▀ ▄ ▄██▀█▀▄▀█▀▀ ██
+█▄▄▄▄▄▄▄█▄▄████▄██▄▄▄▄▄▄▄▄█
+
+[2m› Scan the QR code above to open in [1mExpo Go[22m[2m.[22m
+› Metro: [4mexp://172.31.85.194:8081[24m
+› Web: [4mhttp://localhost:8081[24m
+
+› Using [36mExpo Go[39m [2m(Press [22m[2m[1ms[22m[22m[2m to switch to development build)[22m
+› Press [1m?[22m [2m│[22m show all commands
+
+Logs for your project will appear below.[2m Press Ctrl+C to exit.[22m
+[JAHEEZ proxy] Metro ready — flushing 0 queued requests

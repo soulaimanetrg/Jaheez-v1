@@ -1,0 +1,11 @@
+import { Router } from 'express';
+import { adminAuth } from '../../middleware/auth.middleware';
+import { requireRole } from '../../middleware/admin.middleware';
+import { validate } from '../../middleware/validate.middleware';
+import { ReliabilityController } from './reliability.controller';
+import { overturnDelaySchema } from './reliability.validators';
+const router = Router(); const controller = new ReliabilityController();
+router.use(adminAuth, requireRole('super_admin', 'operations'));
+router.get('/reliability/delays', controller.list);
+router.post('/reliability/delays/:id/overturn', validate(overturnDelaySchema), controller.overturn);
+export default router;

@@ -1,0 +1,96 @@
+# ─── Environment files (NEVER commit secrets) ───
+.env
+.env.local
+.env.production
+.env.staging
+*.env.local
+*.staging.local
+*.env*.bak
+backend/.env
+backend/.env.staging.local
+backend/staging-access.private.json
+frontend/user-app/.env
+frontend/driver-app/.env
+frontend/admin/.env
+
+# ─── Keep example env files tracked ───
+!.env.example
+!.env.production.example
+!backend/.env.example
+!backend/.env.staging.local.example
+!backend/staging-access.private.json.example
+!frontend/user-app/.env.example
+!frontend/driver-app/.env.example
+!frontend/admin/.env.example
+
+# ─── Dependencies ───
+node_modules/
+.npm-cache/
+backend/node_modules/
+frontend/user-app/node_modules/
+frontend/driver-app/node_modules/
+frontend/admin/node_modules/
+
+# ─── Expo ───
+.expo/
+frontend/user-app/.expo/
+frontend/driver-app/.expo/
+frontend/user-app/expo-env.d.ts
+frontend/driver-app/expo-env.d.ts
+dist/
+web-build/
+
+# ─── Native builds ───
+frontend/user-app/android/.gradle/
+frontend/user-app/android/app/build/
+frontend/user-app/ios/Pods/
+frontend/driver-app/android/.gradle/
+frontend/driver-app/android/app/build/
+frontend/driver-app/ios/Pods/
+
+# ─── OS files ───
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+
+# ─── IDE ───
+.idea/
+*.iml
+
+# ─── Build outputs ───
+*.tsbuildinfo
+backend/dist/
+frontend/admin/dist/
+frontend/user-app/dist/
+frontend/driver-app/dist/
+frontend/user-app/dist-debug/
+frontend/driver-app/dist-debug/
+
+# ─── Test coverage ───
+coverage/
+backend/coverage/
+
+# ─── Logs ───
+*.log
+npm-debug.log*
+
+# ─── Deploy secrets ───
+deploy/ssl/
+deploy/certbot/
+
+# Staging validation artifacts (encrypted backups/signoff reports)
+artifacts/recovery/
+jaheez-encrypted-backups/
+jaheez-staging-signoff/
+backend/jaheez-encrypted-backups/
+backend/jaheez-staging-signoff/
+*.dump
+*.dump.enc
+*.dump.enc.sha256
+*.backup
+*.backup.enc
+staging-full-*.json
+reconciliation-*.json
+readiness-status*.json
+.tmp-readiness-status.json

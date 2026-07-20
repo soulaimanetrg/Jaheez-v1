@@ -1,0 +1,23 @@
+{
+  "expo": {
+    "name": "JAHEEZ Livreur",
+    "slug": "jaheez-driver",
+    "version": "1.0.0",
+    "scheme": "jaheez-driver",
+    "userInterfaceStyle": "light",
+    "orientation": "portrait",
+    "backgroundColor": "#FEFDF8",
+    "primaryColor": "#F03030",
+    "assetBundlePatterns": ["**/*"],
+    "android": { "package": "com.jaheez.driver" },
+    "ios": { "supportsTablet": false, "bundleIdentifier": "com.jaheez.driver" },
+    "web": { "bundler": "metro", "backgroundColor": "#FEFDF8" },
+    "plugins": [
+      "expo-router",
+      "expo-font",
+      ["expo-location", { "locationAlwaysAndWhenInUsePermission": "JAHEEZ a besoin de votre position pour vous attribuer des courses." }],
+      "expo-secure-store"
+    ],
+    "experiments": { "typedRoutes": true, "baseUrl": "/driver" }
+  }
+}

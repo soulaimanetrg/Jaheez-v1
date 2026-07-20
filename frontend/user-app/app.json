@@ -1,0 +1,51 @@
+{
+  "expo": {
+    "name": "JAHEEZ",
+    "slug": "jaheez-user",
+    "version": "1.0.0",
+    "scheme": "jaheez",
+    "userInterfaceStyle": "light",
+    "orientation": "portrait",
+    "jsEngine": "jsc",
+    "backgroundColor": "#FEFDF8",
+    "primaryColor": "#F03030",
+    "splash": {
+      "image": "./assets/images/splash_first.png",
+      "resizeMode": "cover",
+      "backgroundColor": "#F03030"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "android": {
+      "package": "com.jaheez.user",
+      "adaptiveIcon": {
+        "backgroundColor": "#F5CE2E"
+      }
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.jaheez.user"
+    },
+    "web": {
+      "bundler": "metro",
+      "backgroundColor": "#FEFDF8"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-font",
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Jaheez utilise votre position pendant l'utilisation pour definir votre adresse de livraison."
+        }
+      ],
+      "expo-secure-store",
+      "expo-video",
+      "expo-image"
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}

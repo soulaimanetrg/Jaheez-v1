@@ -1,0 +1,20 @@
+{
+  "expo": {
+    "extra": {
+      "eas": {
+        "projectId": "b96c887c-9b8d-4208-ae2e-840036858db1"
+      }
+    },
+    "owner": "jaheezs-team",
+    "slug": "jaheez",
+    "android": {
+      "package": "com.Jaheez.Jaheez"
+    },
+    "ios": {
+      "bundleIdentifier": "com.Jaheez.Jaheez",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
+    }
+  }
+}

@@ -1,0 +1,24 @@
+fix(driver-app): unblock UI when Google Fonts (Cairo) is slow/blocked
+
+User report: "delivery app isn't working — welcome screen never loads
+(blank/red error) AND login/OTP doesn't work".
+
+Root cause: driver-app/_layout.tsx gates the entire UI on `useFonts({Cairo_*})`
+from @expo-google-fonts/cairo. In the proxied iframe environment Cairo can't be
+fetched from Google Fonts; fontfaceobserver eventually rejects with a
+"12000ms timeout exceeded" unhandled rejection (visible in browser console
+logs) and `fontsLoaded` never flips true, so the layout returns the blank red
+View forever. That blocks welcome, which blocks login, OTP, register —
+matching both symptoms exactly.
+
+Fix:
+- driver-app/app/_layout.tsx: also unblock when `useFonts` returns an error,
+  AND add a 2-second fallback timer that flips an `fontsTimeout` flag so the
+  app renders with the system font even if useFonts hangs. Now the gate is
+  `fontsLoaded || fontsError || fontsTimeout` instead of only `fontsLoaded`.
+  (User-app already had equivalent handling.)
+
+Verification: ran an end-to-end test against /driver/ — welcome renders,
+"J'ai déjà un compte" → login → POST /admin-api/otp/send 200 → OTP screen →
+verify with fake code returns the expected 400 with the correct error UI →
+"Commencer" → register screen renders.

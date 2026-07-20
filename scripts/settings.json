@@ -1,0 +1,110 @@
+{
+  "delivery_fee_base": {
+    "key": "delivery_fee_base",
+    "value": "1500",
+    "description": "Frais de livraison de base en centimes",
+    "updated_at": "2026-06-09T01:18:28.196Z"
+  },
+  "free_delivery_threshold": {
+    "key": "free_delivery_threshold",
+    "value": "20000",
+    "description": "Seuil de livraison gratuite en centimes",
+    "updated_at": "2026-06-09T01:18:28.196Z"
+  },
+  "min_order_amount": {
+    "key": "min_order_amount",
+    "value": "5000",
+    "description": "Montant minimum de commande en centimes",
+    "updated_at": "2026-06-09T01:18:28.196Z"
+  },
+  "max_order_amount": {
+    "key": "max_order_amount",
+    "value": "500000",
+    "description": "Montant maximum de commande en centimes",
+    "updated_at": "2026-06-09T01:18:28.196Z"
+  },
+  "platform_commission_pct": {
+    "key": "platform_commission_pct",
+    "value": "15",
+    "description": "Commission de la plateforme sur la commande (%)",
+    "updated_at": "2026-06-09T01:18:28.196Z"
+  },
+  "driver_share_pct": {
+    "key": "driver_share_pct",
+    "value": "50",
+    "description": "Part des frais de livraison attribuée au livreur (%)",
+    "updated_at": "2026-06-09T01:21:50.213Z"
+  },
+  "driver_tip_share_pct": {
+    "key": "driver_tip_share_pct",
+    "value": "45",
+    "description": "Part du pourboire attribuée au livreur (%)",
+    "updated_at": "2026-06-09T01:18:28.196Z"
+  },
+  "maintenance_mode": {
+    "key": "maintenance_mode",
+    "value": "false",
+    "description": "Mode maintenance (true/false)",
+    "updated_at": "2026-06-09T01:18:28.196Z"
+  },
+  "maintenance_message_fr": {
+    "key": "maintenance_message_fr",
+    "value": "L'application est en maintenance. Merci de réessayer dans quelques minutes.",
+    "description": "Message de maintenance (FR)",
+    "updated_at": "2026-06-09T01:18:28.196Z"
+  },
+  "maintenance_message_ar": {
+    "key": "maintenance_message_ar",
+    "value": "التطبيق قid الصيانة. يرجى المحاولة après quelques minutes.",
+    "description": "Message de maintenance (AR)",
+    "updated_at": "2026-06-09T01:18:28.196Z"
+  },
+  "min_required_version_ios": {
+    "key": "min_required_version_ios",
+    "value": "1.0.0",
+    "description": "Version minimale requise pour iOS",
+    "updated_at": "2026-06-09T01:18:28.196Z"
+  },
+  "min_required_version_android": {
+    "key": "min_required_version_android",
+    "value": "1.0.0",
+    "description": "Version minimale requise pour Android",
+    "updated_at": "2026-06-09T01:18:28.196Z"
+  },
+  "support_phone_e164": {
+    "key": "support_phone_e164",
+    "value": "+212600000000",
+    "description": "Téléphone de support au format international",
+    "updated_at": "2026-06-09T01:18:28.196Z"
+  },
+  "support_phone": {
+    "key": "support_phone",
+    "value": "0600000000",
+    "description": "Téléphone de support affiché",
+    "updated_at": "2026-06-09T01:18:28.196Z"
+  },
+  "whatsapp_support": {
+    "key": "whatsapp_support",
+    "value": "0600000000",
+    "description": "Numéro WhatsApp du support",
+    "updated_at": "2026-06-09T01:18:28.196Z"
+  },
+  "city_coverage": {
+    "key": "city_coverage",
+    "value": "آسفي",
+    "description": "Ville couverte par le service",
+    "updated_at": "2026-06-09T01:18:28.196Z"
+  },
+  "max_delivery_radius_km": {
+    "key": "max_delivery_radius_km",
+    "value": "10",
+    "description": "Rayon de livraison maximal en kilomètres",
+    "updated_at": "2026-06-09T01:18:28.196Z"
+  },
+  "min_payout_mad": {
+    "key": "min_payout_mad",
+    "value": "30",
+    "description": "Montant minimum d'un retrait chauffeur (MAD)",
+    "updated_at": "2026-06-09T01:19:22.013Z"
+  }
+}
