@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { CartItem } from '@shared/types';
+import { generateSecureUUID } from '@/lib/uuid';
 
 /** A cart line is a customer draft, never a source of price or availability truth. */
 export type CartLine = CartItem & { cart_line_id: string };
@@ -41,18 +42,35 @@ export interface CartStoreState {
   setActiveStoreId: (storeId: string | null) => void;
 }
 
+export const MAX_CART_LINE_QUANTITY = 50;
+export const MAX_CART_TOTAL_UNITS = 100;
+
+export function cartLineSignature(item: Pick<CartItem, 'menu_item_id' | 'selected_options'>): string {
+  const options = (item.selected_options || [])
+    .map((option) => `${option.option_id}:${option.choice_id}`)
+    .sort()
+    .join('|');
+  return `${item.menu_item_id}|${options}`;
+}
+
 function makeCartLineId(): string {
-  try {
-    const uuid = globalThis.crypto?.randomUUID?.();
-    if (uuid) return `line:${uuid}`;
-  } catch {
-    // The id is only a local draft identifier, not a security credential.
-  }
-  return `line:${Date.now().toString(36)}:${Math.random().toString(36).slice(2, 10)}`;
+  return `line:${generateSecureUUID()}`;
 }
 
 function normalizeLine(item: CartItem | Partial<CartLine>): CartLine {
   const cartLineId = (item as Partial<CartLine>).cart_line_id || makeCartLineId();
+  const optionKeys = new Set<string>();
+  const selectedOptions = (item.selected_options || []).filter((option) => {
+    const key = `${option.option_id}:${option.choice_id}`;
+    if (!option.option_id || !option.choice_id || optionKeys.has(key)) return false;
+    optionKeys.add(key);
+    return true;
+  }).slice(0, 20).map((option) => {
+    // Preserve backend-provided price_delta; clamp to finite non-negative value
+    const rawDelta = Number(option.price_delta ?? 0);
+    const safeDelta = Number.isFinite(rawDelta) && rawDelta >= 0 ? rawDelta : 0;
+    return { ...option, price_delta: safeDelta };
+  });
   return {
     ...item,
     id: cartLineId,
@@ -60,19 +78,42 @@ function normalizeLine(item: CartItem | Partial<CartLine>): CartLine {
     menu_item_id: item.menu_item_id || '',
     name: item.name || '',
     name_ar: item.name_ar || '',
-    quantity: Math.max(1, Number(item.quantity) || 1),
+    quantity: Math.min(MAX_CART_LINE_QUANTITY, Math.max(1, Math.trunc(Number(item.quantity) || 1))),
     unit_price: Number(item.unit_price) || 0,
     store_id: item.store_id || '',
+    selected_options: selectedOptions,
   } as CartLine;
+}
+
+function mergeNormalizedLines(items: Array<CartItem | Partial<CartLine>>): CartLine[] {
+  const merged = new Map<string, CartLine>();
+  let remainingUnits = MAX_CART_TOTAL_UNITS;
+  for (const candidate of items) {
+    if (remainingUnits <= 0) break;
+    const line = normalizeLine(candidate);
+    if (!line.menu_item_id) continue;
+    const signature = cartLineSignature(line);
+    const existing = merged.get(signature);
+    const nextQuantity = Math.min(
+      MAX_CART_LINE_QUANTITY,
+      remainingUnits + (existing?.quantity || 0),
+      (existing?.quantity || 0) + line.quantity,
+    );
+    const addedUnits = nextQuantity - (existing?.quantity || 0);
+    if (addedUnits <= 0) continue;
+    merged.set(signature, existing ? { ...existing, quantity: nextQuantity } : { ...line, quantity: addedUnits });
+    remainingUnits -= addedUnits;
+  }
+  return Array.from(merged.values());
 }
 
 function normalizeCart(cart: Partial<StoreCart>, fallbackStoreId: string): StoreCart {
   return {
     storeId: cart.storeId || fallbackStoreId,
     storeName: cart.storeName || '',
-    items: (cart.items || []).map(normalizeLine),
-    promoCode: cart.promoCode || null,
-    deliveryNote: cart.deliveryNote || '',
+    items: mergeNormalizedLines(cart.items || []).map((item) => ({ ...item, unit_price: 0 })),
+    promoCode: null,
+    deliveryNote: String(cart.deliveryNote || '').slice(0, 500),
     storeLogo: cart.storeLogo || null,
   };
 }
@@ -126,9 +167,25 @@ export const useCartStore = create<CartStoreState>()(
         set((state) => {
           if (state.activeStoreId && state.activeStoreId !== item.store_id && state.items.length > 0) return {};
           const cart = state.carts[item.store_id] || normalizeCart({ storeId: item.store_id }, item.store_id);
+          const incoming = normalizeLine(item);
+          const signature = cartLineSignature(incoming);
+          const existing = cart.items.find((line) => cartLineSignature(line) === signature);
+          const currentUnits = cart.items.reduce((sum, line) => sum + line.quantity, 0);
+          const availableUnits = Math.max(0, MAX_CART_TOTAL_UNITS - currentUnits);
+          const allowedAddition = Math.min(
+            incoming.quantity,
+            availableUnits,
+            MAX_CART_LINE_QUANTITY - (existing?.quantity || 0),
+          );
+          if (allowedAddition <= 0) return {};
+          const nextItems = existing
+            ? cart.items.map((line) => line.cart_line_id === existing.cart_line_id
+              ? { ...line, quantity: line.quantity + allowedAddition }
+              : line)
+            : [...cart.items, { ...incoming, quantity: allowedAddition }];
           const carts = {
             ...state.carts,
-            [item.store_id]: { ...cart, items: [...cart.items, normalizeLine(item)], promoCode: null },
+            [item.store_id]: { ...cart, items: nextItems, promoCode: null },
           };
           added = true;
           return activeState(carts, item.store_id);
@@ -138,9 +195,9 @@ export const useCartStore = create<CartStoreState>()(
 
       replaceItem: (cartLineId, replacement) => set((state) => updateActiveCart(state, (cart) => ({
         ...cart,
-        items: cart.items.map((item) => item.cart_line_id === cartLineId
+        items: mergeNormalizedLines(cart.items.map((item) => item.cart_line_id === cartLineId
           ? normalizeLine({ ...replacement, id: cartLineId, cart_line_id: cartLineId })
-          : item),
+          : item)),
         promoCode: null,
       }))),
 
@@ -167,11 +224,19 @@ export const useCartStore = create<CartStoreState>()(
           else delete carts[storeId];
           return activeState(carts, items.length ? storeId : (Object.keys(carts)[0] || null));
         }
+        const currentLine = cart.items.find((item) => item.cart_line_id === cartLineId)!;
+        const otherUnits = cart.items.reduce((sum, item) => sum + (item.cart_line_id === cartLineId ? 0 : item.quantity), 0);
+        const safeQuantity = Math.min(
+          MAX_CART_LINE_QUANTITY,
+          Math.max(1, Math.trunc(quantity)),
+          Math.max(1, MAX_CART_TOTAL_UNITS - otherUnits),
+        );
+        if (safeQuantity === currentLine.quantity) return {};
         return activeState({
           ...state.carts,
           [storeId]: {
             ...cart,
-            items: cart.items.map((item) => item.cart_line_id === cartLineId ? { ...item, quantity } : item),
+            items: cart.items.map((item) => item.cart_line_id === cartLineId ? { ...item, quantity: safeQuantity } : item),
             promoCode: null,
           },
         }, storeId);

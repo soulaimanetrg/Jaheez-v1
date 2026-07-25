@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, Pressable, StyleSheet, ViewStyle } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Ionicons } from '@/components/ui/Ionicons';
+import { AppIcon } from '@/components/ui/AppIcon';
 import { BRAND, FONTS, JUI, SIZE, SPACE } from '../../constants/brand';
 
 interface TopNavProps {
@@ -49,7 +49,7 @@ export function TopNav({
                 accessibilityLabel="رجوع"
                 accessibilityRole="button"
               >
-                <Ionicons name="arrow-back" size={JUI.ICON_MD} color={textColor} />
+                <AppIcon name="arrow-back" size={JUI.ICON_MD} color={textColor} />
               </Pressable>
             ) : null
           )}

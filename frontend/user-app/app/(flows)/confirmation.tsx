@@ -10,7 +10,7 @@ import { BRAND, FONTS } from '../../constants/brand';
 import { useOrder } from '../../hooks/queries/useOrders';
 import { Loader, EmptyState } from '../../components/ui';
 import { HapticTab } from '../../components/ui/HapticTab';
-import { Ionicons } from '@/components/ui/Ionicons';
+import { AppIcon } from '@/components/ui/AppIcon';
 
 const { width: W } = Dimensions.get('window');
 
@@ -141,7 +141,7 @@ export default function ConfirmationScreen() {
           accessibilityLabel="طلباتي"
           accessibilityRole="button"
         >
-          <Ionicons name="receipt-outline" size={18} color={BRAND.TEXT2} />
+          <AppIcon name="receipt-outline" size={18} color={BRAND.TEXT2} />
           <Text style={styles.ordersBtnText}>طلباتي</Text>
         </HapticTab>
       </RNAnimated.View>

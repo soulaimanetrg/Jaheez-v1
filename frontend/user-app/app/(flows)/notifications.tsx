@@ -15,7 +15,7 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Ionicons } from '@/components/ui/Ionicons';
+import { AppIcon } from '@/components/ui/AppIcon';
 import { BRAND, FONTS } from '../../constants/brand';
 import { useNotifications, useMarkAllRead, useMarkRead } from '../../hooks/queries/useNotifications';
 import type { InboxNotif } from '../../lib/notificationInbox';
@@ -234,7 +234,7 @@ export default function NotificationsScreen() {
           style={styles.backBtn}
           onPress={() => (router.canGoBack() ? router.back() : router.replace('/(tabs)'))}
         >
-          <Ionicons name={backArrow(isRTL)} size={22} color="#1E293B" />
+          <AppIcon name={backArrow(isRTL)} size={22} color="#1E293B" />
         </Pressable>
         <Text style={styles.headerTitle}>{t.notifications}</Text>
         <View style={{ width: 40 }} />
@@ -292,7 +292,7 @@ export default function NotificationsScreen() {
           {/* Empty State */}
           {!isLoading && filteredNotifs.length === 0 && (
             <View style={styles.centerBox}>
-              <Ionicons name="notifications-off-outline" size={80} color="#CBD5E1" />
+              <AppIcon name="notifications-off-outline" size={80} color="#CBD5E1" />
               <Text style={styles.emptyTitle}>{t.notifEmpty}</Text>
               <Text style={styles.emptySub}>{t.notifEmptySub}</Text>
             </View>
@@ -348,7 +348,7 @@ export default function NotificationsScreen() {
                         isRTL ? { marginLeft: 14 } : { marginRight: 14 },
                       ]}
                     >
-                      <Ionicons name={meta.icon as any} size={22} color={meta.color} />
+                      <AppIcon name={meta.icon} size={22} color={meta.color} />
                     </View>
 
                     <View style={[styles.content, { alignItems: dirItems(isRTL) }]}>
@@ -427,8 +427,8 @@ export default function NotificationsScreen() {
               >
                 {/* Icon */}
                 <View style={[styles.modalIconWrap, { backgroundColor: getNotifMeta(selectedNotif).bg }]}>
-                  <Ionicons
-                    name={getNotifMeta(selectedNotif).icon as any}
+                  <AppIcon
+                    name={getNotifMeta(selectedNotif).icon}
                     size={32}
                     color={getNotifMeta(selectedNotif).color}
                   />

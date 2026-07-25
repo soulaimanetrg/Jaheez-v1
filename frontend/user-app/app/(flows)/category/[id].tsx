@@ -24,7 +24,7 @@ import Animated, {
   withSpring,
   withTiming
 } from 'react-native-reanimated';
-import { Ionicons } from '@/components/ui/Ionicons';
+import { AppIcon } from '@/components/ui/AppIcon';
 import { useLangStore } from '../../../store/languageStore';
 import { dirRow, dirText, dirItems } from '../../../lib/direction';
 import { BRAND, FONTS } from '../../../constants/brand';
@@ -292,7 +292,7 @@ function SortFilterChip({
 }: {
   active: boolean;
   label: string;
-  icon: React.ComponentProps<typeof Ionicons>['name'];
+  icon: React.ComponentProps<typeof AppIcon>['name'];
   count?: number;
   isRTL: boolean;
   lang: string;
@@ -318,7 +318,7 @@ function SortFilterChip({
       style={[styles.sortBtn, active && styles.sortBtnActive, { flexDirection: dirRow(isRTL) }]}
       onPress={onPress}
     >
-      <Ionicons name={icon} size={14} color={active ? BRAND.SURFACE : BRAND.TEXT3} />
+      <AppIcon name={icon} size={14} color={active ? BRAND.SURFACE : BRAND.TEXT3} active={active} />
       <Text style={[styles.sortBtnTxt, active && styles.sortBtnTxtActive]}>
         {label}
       </Text>
@@ -338,7 +338,7 @@ function SortFilterChip({
             onClear();
           }}
         >
-          <Ionicons name="close" size={12} color={BRAND.RED} />
+          <AppIcon name="close" size={12} color={BRAND.RED} />
         </Pressable>
       </Animated.View>
     </Pressable>
@@ -774,7 +774,7 @@ export default function CategoryScreen() {
               accessibilityRole="button"
               accessibilityLabel={lang === 'ar' ? '\u0631\u062c\u0648\u0639' : 'Retour'}
             >
-              <Ionicons name="arrow-back" size={22} color={BRAND.TEXT} style={{ transform: [{ scaleX: isRTL ? -1 : 1 }] }} />
+              <AppIcon name="arrow-back" size={22} color={BRAND.TEXT} style={{ transform: [{ scaleX: isRTL ? -1 : 1 }] }} />
             </Pressable>
           </Animated.View>
           
@@ -881,7 +881,7 @@ export default function CategoryScreen() {
             accessibilityRole="button"
             accessibilityLabel={lang === 'ar' ? '\u0625\u0639\u0627\u062f\u0629 \u062a\u0639\u064a\u064a\u0646 \u0627\u0644\u0641\u0644\u0627\u062a\u0631' : 'Reinitialiser les filtres'}
           >
-            <Ionicons name="refresh" size={14} color={BRAND.TEXT3} />
+            <AppIcon name="refresh" size={14} color={BRAND.TEXT3} />
             <Text style={styles.resetInlineText}>
               {lang === 'ar' ? '\u0625\u0639\u0627\u062f\u0629' : 'Reinitialiser'}
             </Text>

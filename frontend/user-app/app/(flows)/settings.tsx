@@ -8,7 +8,7 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Ionicons } from '@/components/ui/Ionicons';
+import { AppIcon } from '@/components/ui/AppIcon';
 import { BRAND, FONTS } from '../../constants/brand';
 import { useLangStore } from '../../store/languageStore';
 import { dirRow, dirText, backArrow } from '../../lib/direction';
@@ -65,7 +65,7 @@ export default function SettingsScreen() {
           style={styles.backButton}
           onPress={() => (router.canGoBack() ? router.back() : router.replace('/(tabs)/profile'))}
         >
-          <Ionicons name={backArrow(isRTL)} size={22} color="#1E293B" />
+          <AppIcon name={backArrow(isRTL)} size={22} color="#1E293B" />
         </Pressable>
         <Text style={styles.headerTitle}>
           {isAr ? 'الإعدادات' : 'Paramètres'}
@@ -93,7 +93,7 @@ export default function SettingsScreen() {
                 onPress={() => router.push(item.route)}
               >
                 <View style={[styles.iconWrap, { backgroundColor: item.bg }]}>
-                  <Ionicons name={item.icon as any} size={20} color={item.color} />
+                  <AppIcon name={item.icon} size={20} color={item.color} />
                 </View>
                 <View style={styles.labelWrap}>
                   <Text style={[
@@ -104,7 +104,7 @@ export default function SettingsScreen() {
                     {item.label}
                   </Text>
                 </View>
-                <Ionicons name={rowChevron as any} size={16} color={item.isDestructive ? '#FCA5A5' : '#94A3B8'} />
+                <AppIcon name={rowChevron} size={16} color={item.isDestructive ? '#FCA5A5' : '#94A3B8'} />
               </Pressable>
             );
           })}

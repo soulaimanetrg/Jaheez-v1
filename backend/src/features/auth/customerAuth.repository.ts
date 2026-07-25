@@ -6,13 +6,102 @@ const customerAuthClient = () => createClient(env.SUPABASE_URL, env.SUPABASE_ANO
   auth: { persistSession: false, autoRefreshToken: false },
 });
 
+export type CustomerRegistrationChallengeRow = {
+  id: string;
+  identifier_type: 'email' | 'phone';
+  identifier_hash: string;
+  code_hash: string;
+  proof_hash: string | null;
+  provider_status: 'pending' | 'sent' | 'verified' | 'failed' | 'consumed';
+  attempts: number;
+  resend_available_at: string;
+  expires_at: string;
+  verified_at: string | null;
+  consumed_at: string | null;
+  locked_until: string | null;
+  device_hash: string;
+  ip_hash: string;
+  created_at?: string;
+};
+
 export class CustomerAuthRepository {
-  async signUpCustomer(phone: string, password: string, metadata: Record<string, unknown>) {
-    const { data, error } = await customerAuthClient().auth.signUp({
-      phone, password, options: { channel: 'whatsapp', data: metadata },
-    });
-    if (error) throw error;
-    return data;
+  async customerAuthIdentifierExists(type: 'email' | 'phone', identifier: string): Promise<boolean> {
+    try {
+      const { data, error } = await supabase.rpc('customer_auth_identifier_exists', {
+        p_identifier_type: type,
+        p_identifier: identifier,
+      });
+      if (!error && typeof data === 'boolean') return data;
+    } catch {
+      // Fall through to direct table check
+    }
+
+    try {
+      if (type === 'email') {
+        const { data } = await supabase.from('users').select('id').eq('email', identifier.toLowerCase().trim()).limit(1);
+        if (data && data.length > 0) return true;
+      } else {
+        const { data } = await supabase.from('users').select('id').eq('phone', identifier.trim()).limit(1);
+        if (data && data.length > 0) return true;
+      }
+    } catch {
+      // Fallback
+    }
+
+    return false;
+  }
+
+  async cleanupAuthContinuationAttempts(): Promise<void> {
+    try {
+      const { error } = await supabase.rpc('cleanup_customer_auth_continuation_attempts');
+      if (!error) return;
+    } catch {
+      // Fall through to direct table delete
+    }
+    try {
+      const cutoff = new Date(Date.now() - 24 * 60 * 60_000).toISOString();
+      await supabase.from('customer_auth_continuation_attempts').delete().lt('created_at', cutoff);
+    } catch {
+      // Housekeeping cleanup failure should not crash authentication
+    }
+  }
+
+  async countRecentAuthContinuationAttempts(
+    identifierHash: string,
+    deviceHash: string,
+    ipHash: string,
+    since: string,
+  ): Promise<{ identifier: number; device: number; ip: number }> {
+    const count = async (column: 'identifier_hash' | 'device_hash' | 'ip_hash', value: string) => {
+      try {
+        const { count: result, error } = await supabase.from('customer_auth_continuation_attempts')
+          .select('id', { count: 'exact', head: true })
+          .eq(column, value)
+          .gte('created_at', since);
+        if (error) return 0;
+        return result || 0;
+      } catch {
+        return 0;
+      }
+    };
+    const [identifier, device, ip] = await Promise.all([
+      count('identifier_hash', identifierHash),
+      count('device_hash', deviceHash),
+      count('ip_hash', ipHash),
+    ]);
+    return { identifier, device, ip };
+  }
+
+  async recordAuthContinuationAttempt(identifierHash: string, deviceHash: string, ipHash: string): Promise<void> {
+    try {
+      await supabase.from('customer_auth_continuation_attempts').insert({
+        identifier_hash: identifierHash,
+        device_hash: deviceHash,
+        ip_hash: ipHash,
+      });
+    } catch {
+      // Non-blocking rate-limiting record failure
+    }
   }
 
   async createPasswordCustomer(phone: string, password: string, metadata: Record<string, unknown>) {
@@ -49,20 +138,95 @@ export class CustomerAuthRepository {
     return data;
   }
 
-  async verifyCustomerSignup(phone: string, code: string) {
-    const { data, error } = await customerAuthClient().auth.verifyOtp({ phone, token: code, type: 'sms' });
-    if (error) throw error;
-    return data;
+
+  async createRegistrationChallenge(row: CustomerRegistrationChallengeRow): Promise<void> {
+    const { error } = await supabase.from('customer_registration_challenges').insert(row);
+    if (error) throw new Error(error.message);
   }
 
-  async resendCustomerSignup(phone: string) {
-    const { error } = await customerAuthClient().auth.resend({ type: 'sms', phone });
-    if (error) throw error;
+  async cleanupRegistrationChallenges(): Promise<void> {
+    try {
+      const { error } = await supabase.rpc('cleanup_customer_registration_challenges');
+      if (!error) return;
+    } catch {
+      // Fall through to direct table delete
+    }
+    try {
+      const cutoff = new Date(Date.now() - 60 * 60_000).toISOString();
+      await supabase.from('customer_registration_challenges').delete().lt('expires_at', cutoff);
+    } catch {
+      // Housekeeping cleanup failure should not crash authentication
+    }
   }
 
-  async requestCustomerRecovery(phone: string) {
-    const { error } = await customerAuthClient().auth.signInWithOtp({ phone, options: { shouldCreateUser: false, channel: 'whatsapp' } });
-    if (error) throw error;
+  async findRegistrationChallenge(id: string): Promise<CustomerRegistrationChallengeRow | null> {
+    const { data, error } = await supabase.from('customer_registration_challenges')
+      .select('id,identifier_type,identifier_hash,code_hash,proof_hash,provider_status,attempts,resend_available_at,expires_at,verified_at,consumed_at,locked_until,device_hash,ip_hash,created_at')
+      .eq('id', id)
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+    return data as CustomerRegistrationChallengeRow | null;
+  }
+
+  async countRecentRegistrationChallenges(
+    identifierHash: string,
+    deviceHash: string,
+    ipHash: string,
+    since: string,
+  ): Promise<{ identifier: number; device: number; ip: number }> {
+    const count = async (column: 'identifier_hash' | 'device_hash' | 'ip_hash', value: string) => {
+      const { count: result, error } = await supabase.from('customer_registration_challenges')
+        .select('id', { count: 'exact', head: true })
+        .eq(column, value)
+        .gte('created_at', since);
+      if (error) throw new Error(error.message);
+      return result || 0;
+    };
+    const [identifier, device, ip] = await Promise.all([
+      count('identifier_hash', identifierHash),
+      count('device_hash', deviceHash),
+      count('ip_hash', ipHash),
+    ]);
+    return { identifier, device, ip };
+  }
+
+  async updateRegistrationChallenge(
+    id: string,
+    updates: Partial<Pick<CustomerRegistrationChallengeRow,
+      'code_hash' | 'proof_hash' | 'provider_status' | 'attempts' | 'resend_available_at' |
+      'verified_at' | 'consumed_at' | 'locked_until'>>,
+  ): Promise<void> {
+    const { error } = await supabase.from('customer_registration_challenges').update(updates).eq('id', id);
+    if (error) throw new Error(error.message);
+  }
+
+  async verifyRegistrationCode(id: string, codeHash: string, proofHash: string): Promise<boolean> {
+    const { data, error } = await supabase.rpc('verify_customer_registration_code', {
+      p_challenge_id: id,
+      p_code_hash: codeHash,
+      p_proof_hash: proofHash,
+    });
+    if (error) throw new Error(error.message);
+    return data === 'verified';
+  }
+
+  async prepareRegistrationResend(id: string, codeHash: string, resendAvailableAt: string): Promise<boolean> {
+    const { data, error } = await supabase.rpc('prepare_customer_registration_resend', {
+      p_challenge_id: id,
+      p_code_hash: codeHash,
+      p_resend_available_at: resendAvailableAt,
+    });
+    if (error) throw new Error(error.message);
+    return data === true;
+  }
+
+  async consumeRegistrationChallenge(id: string, proofHash: string): Promise<boolean> {
+    const { data, error } = await supabase.rpc('consume_customer_registration_challenge', {
+      p_challenge_id: id,
+      p_proof_hash: proofHash,
+    });
+    if (error) throw new Error(error.message);
+    return data === true;
   }
   async createAuthUser(params: any): Promise<any> {
     const { data, error } = await supabase.auth.admin.createUser(params);
@@ -136,11 +300,6 @@ export class CustomerAuthRepository {
     return null;
   }
 
-  async confirmDemoPhoneUser(userId: string, password: string, metadata: Record<string, unknown>): Promise<void> {
-    const { error } = await supabase.auth.admin.updateUserById(userId, { password, phone_confirm: true, user_metadata: metadata });
-    if (error) throw new Error(error.message);
-  }
-
   async updateAuthUserEmail(userId: string, email: string): Promise<void> {
     const { error } = await supabase.auth.admin.updateUserById(userId, {
       email,
@@ -193,8 +352,18 @@ export class CustomerAuthRepository {
   }
 
   async cleanupPhoneChallenges(): Promise<void> {
-    const { error } = await supabase.rpc('cleanup_customer_phone_challenges');
-    if (error) throw new Error(error.message);
+    try {
+      const { error } = await supabase.rpc('cleanup_customer_phone_challenges');
+      if (!error) return;
+    } catch {
+      // Fall through to direct table delete
+    }
+    try {
+      const cutoff = new Date(Date.now() - 60 * 60_000).toISOString();
+      await supabase.from('customer_phone_verification_challenges').delete().lt('expires_at', cutoff);
+    } catch {
+      // Housekeeping cleanup failure should not crash authentication
+    }
   }
 
   async findActiveUserByPhone(phone: string): Promise<any | null> {

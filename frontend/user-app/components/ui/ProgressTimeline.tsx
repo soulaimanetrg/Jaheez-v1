@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { BRAND, FONTS } from '../../constants/brand';
 import { PulseIndicator } from './PulseIndicator';
-import { Ionicons } from '@/components/ui/Ionicons';
+import { AppIcon } from '@/components/ui/AppIcon';
 
 export interface ProgressTimelineProps {
   steps: string[];
@@ -23,7 +23,7 @@ export function ProgressTimeline({ steps, currentStep }: ProgressTimelineProps) 
               <View style={styles.indicatorContainer}>
                 {isCompleted ? (
                   <View style={styles.completedCircle}>
-                    <Ionicons name="checkmark" size={12} color={BRAND.SURFACE} />
+                    <AppIcon name="checkmark" size={12} color={BRAND.SURFACE} />
                   </View>
                 ) : isCurrent ? (
                   <PulseIndicator color={BRAND.RED} size={20} />

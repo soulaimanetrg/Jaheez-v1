@@ -2,14 +2,24 @@ import { Router } from 'express';
 import { CheckoutController } from './checkout.controller';
 import { verifySupabaseJwt } from '../../middleware/supabaseJwt.middleware';
 import { validate } from '../../middleware/validate.middleware';
-import { checkoutPreviewSchema, checkoutSchema, cancelOrderSchema } from './checkout.validators';
+import { checkoutLinePreviewSchema, checkoutPreviewSchema, checkoutSchema, cancelOrderSchema } from './checkout.validators';
+import { checkoutCreateLimiter, checkoutLinePreviewLimiter, checkoutPreviewLimiter } from '../../middleware/rateLimit.middleware';
 
 const router = Router();
 const controller = new CheckoutController();
 
 router.post(
+  '/v1/checkout/line-preview',
+  verifySupabaseJwt,
+  checkoutLinePreviewLimiter,
+  validate(checkoutLinePreviewSchema),
+  controller.previewLine
+);
+
+router.post(
   '/v1/checkout/preview',
   verifySupabaseJwt,
+  checkoutPreviewLimiter,
   validate(checkoutPreviewSchema),
   controller.previewCheckout
 );
@@ -17,6 +27,7 @@ router.post(
 router.post(
   '/v1/checkout',
   verifySupabaseJwt,
+  checkoutCreateLimiter,
   validate(checkoutSchema),
   controller.createOrder
 );

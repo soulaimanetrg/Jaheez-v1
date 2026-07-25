@@ -1,5 +1,8 @@
 import { supabase } from './supabase';
 import { adminApiUrl } from './adminApi';
+import { BackendApiError } from './apiError';
+
+export { BackendApiError } from './apiError';
 
 export async function getBackendAccessToken(): Promise<string | null> {
   const { data: { session } } = await supabase.auth.getSession();
@@ -17,7 +20,11 @@ export async function backendJson<T>(path: string, init: RequestInit = {}): Prom
   const res = await fetch(adminApiUrl(path), { ...init, headers });
   const json = await res.json().catch(() => null);
   if (!res.ok) {
-    throw new Error(json?.error || json?.message || `Request failed: ${res.status}`);
+    throw new BackendApiError(
+      json?.error || json?.message || `Request failed: ${res.status}`,
+      res.status,
+      json?.error_code || 'request_failed',
+    );
   }
   return json as T;
 }

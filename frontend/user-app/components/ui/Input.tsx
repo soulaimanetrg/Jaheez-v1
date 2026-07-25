@@ -8,7 +8,7 @@ import {
   ViewStyle,
   TextInputProps,
 } from 'react-native';
-import { Ionicons } from '@/components/ui/Ionicons';
+import { AppIcon } from '@/components/ui/AppIcon';
 import { BRAND, FONTS, RADIUS, SIZE, SPACE } from '../../constants/brand';
 import { useLangStore } from '../../store/languageStore';
 import { dirRow, dirText } from '../../lib/direction';
@@ -58,7 +58,7 @@ export function Input({
             accessibilityLabel="Select country code"
           >
             <Text style={styles.countryCodeText}>{countryCode}</Text>
-            <Ionicons name="chevron-down" size={13} color={BRAND.TEXT2} />
+            <AppIcon name="chevron-down" size={13} color={BRAND.TEXT2} />
             <View style={styles.codeDivider} />
           </Pressable>
         )}
@@ -86,7 +86,7 @@ export function Input({
             onPress={() => setShowPassword(!showPassword)}
             accessibilityLabel={showPassword ? 'Hide password' : 'Show password'}
           >
-            <Ionicons name={showPassword ? 'eye-outline' : 'eye-off-outline'} size={18} color={BRAND.TEXT3} />
+            <AppIcon name={showPassword ? 'eye-outline' : 'eye-off-outline'} size={18} color={BRAND.TEXT3} />
           </Pressable>
         )}
 

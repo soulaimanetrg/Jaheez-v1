@@ -5,7 +5,7 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Ionicons } from '@/components/ui/Ionicons';
+import { AppIcon } from '@/components/ui/AppIcon';
 import { BRAND, FONTS, SHADOW_SM } from '../../constants/brand';
 import { useAuthStore } from '../../store/authStore';
 import { useLangStore } from '../../store/languageStore';
@@ -141,7 +141,7 @@ export default function DeleteAccountScreen() {
       {/* Header */}
       <View style={styles.header}>
         <Pressable onPress={goBack} style={styles.backBtn} accessibilityLabel="Back">
-          <Ionicons name={isAr ? 'chevron-forward' : 'chevron-back'} size={22} color={BRAND.TEXT} />
+          <AppIcon name={isAr ? 'chevron-forward' : 'chevron-back'} size={22} color={BRAND.TEXT} />
         </Pressable>
         <Text style={styles.headerTitle}>{isAr ? 'حذف الحساب' : 'Supprimer mon compte'}</Text>
         <View style={{ width: 40 }} />
@@ -156,7 +156,7 @@ export default function DeleteAccountScreen() {
             n < step && styles.dotDone,
           ]}>
             {n < step
-              ? <Ionicons name="checkmark" size={14} color="#fff" />
+              ? <AppIcon name="checkmark" size={14} color="#fff" />
               : <Text style={[styles.dotTxt, n === step && { color: '#fff' }]}>{n}</Text>}
           </View>
         ))}
@@ -165,7 +165,7 @@ export default function DeleteAccountScreen() {
       <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 40 }}>
         {error && (
           <View style={styles.errorBox}>
-            <Ionicons name="alert-circle" size={16} color={BRAND.RED} />
+            <AppIcon name="alert-circle" size={16} color={BRAND.RED} />
             <Text style={styles.errorTxt}>{error}</Text>
           </View>
         )}
@@ -174,7 +174,7 @@ export default function DeleteAccountScreen() {
         {step === 1 && (
           <View>
             <View style={styles.warnBox}>
-              <Ionicons name="warning" size={20} color={BRAND.RED} />
+              <AppIcon name="warning" size={20} color={BRAND.RED} />
               <Text style={[styles.warnTxt, dirStyle]}>
                 {isAr
                   ? 'سيؤدي حذف حسابك إلى فقدان طلباتك وعنواينك ومحفظتك بشكل دائم. لا يمكن التراجع.'
@@ -277,7 +277,7 @@ export default function DeleteAccountScreen() {
               accessibilityState={{ checked: confirmed }}
             >
               <View style={[styles.check, confirmed && styles.checkOn]}>
-                {confirmed && <Ionicons name="checkmark" size={16} color="#fff" />}
+                {confirmed && <AppIcon name="checkmark" size={16} color="#fff" />}
               </View>
               <Text style={[styles.checkTxt, dirStyle, { flex: 1 }]}>
                 {isAr

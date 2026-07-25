@@ -1,8 +1,7 @@
 import React from 'react';
-import { Redirect, Tabs } from 'expo-router';
+import { Redirect, Tabs, useRouter } from 'expo-router';
 import { View, Text, StyleSheet, Pressable, Platform, Image, Vibration } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -10,10 +9,10 @@ import Animated, {
   withRepeat,
   withSequence,
   withTiming,
-  withDelay,
+  interpolate,
   Easing,
 } from 'react-native-reanimated';
-import { Ionicons } from '@/components/ui/Ionicons';
+import { AppIcon } from '@/components/ui/AppIcon';
 import { BRAND, FONTS, JUI, ANIM } from '../../constants/brand';
 import { useLangStore } from '../../store/languageStore';
 import { useCartStore } from '../../store/cartStore';
@@ -30,7 +29,7 @@ const TAB_ICONS: Record<TabName, { icon: string; iconActive: string }> = {
   profile: { icon: 'person-outline', iconActive: 'person' },
 };
 
-/* ── Animated Tab Item ─── */
+/* ── Modern & Elegant Animated Tab Item ─── */
 function TabItem({ route, focused, label, navigation }: {
   route: any;
   focused: boolean;
@@ -40,20 +39,47 @@ function TabItem({ route, focused, label, navigation }: {
   const icons = TAB_ICONS[route.name as TabName];
   if (!icons) return null;
 
-  const scale = useSharedValue(1);
+  const cartCount = useCartStore(s => (route.name === 'cart' ? s.getItemCount() : 0));
 
-  const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value }],
-  }));
+  const focusAnim = useSharedValue(focused ? 1 : 0);
+  const pressScale = useSharedValue(1);
+
+  React.useEffect(() => {
+    focusAnim.value = withSpring(focused ? 1 : 0, {
+      damping: 15,
+      stiffness: 180,
+      mass: 0.7,
+    });
+  }, [focused, focusAnim]);
+
+  const containerAnimatedStyle = useAnimatedStyle(() => {
+    return {
+      transform: [{ scale: pressScale.value }],
+    };
+  });
+
+  const pillAnimatedStyle = useAnimatedStyle(() => {
+    const opacity = interpolate(focusAnim.value, [0, 1], [0, 1]);
+    return {
+      opacity,
+    };
+  });
+
+  const labelAnimatedStyle = useAnimatedStyle(() => {
+    const opacity = interpolate(focusAnim.value, [0, 1], [0.8, 1]);
+    return {
+      opacity,
+    };
+  });
 
   const handlePress = () => {
-    // Haptic feedback
     if (Platform.OS !== 'web') Vibration.vibrate(1);
-    // Bounce animation
-    scale.value = withSequence(
-      withTiming(0.88, { duration: 80, easing: Easing.out(Easing.ease) }),
-      withSpring(1, ANIM.SPRING),
+
+    pressScale.value = withSequence(
+      withTiming(0.92, { duration: 60, easing: Easing.out(Easing.ease) }),
+      withTiming(1, { duration: 100, easing: Easing.out(Easing.ease) }),
     );
+
     const e = navigation.emit({ type: 'tabPress', target: route.key, canPreventDefault: true });
     if (!focused && !e.defaultPrevented) navigation.navigate(route.name);
   };
@@ -65,18 +91,28 @@ function TabItem({ route, focused, label, navigation }: {
       onPress={handlePress}
       accessibilityLabel={label}
     >
-      <Animated.View style={[styles.tabIconWrap, animatedStyle]}>
-        <Ionicons
-          name={(focused ? icons.iconActive : icons.icon) as any}
+      <Animated.View style={[styles.tabIconWrap, containerAnimatedStyle]}>
+        {/* Modern Soft Pill Indicator Backdrop */}
+        <Animated.View style={[styles.activePill, pillAnimatedStyle]} />
+
+        <AppIcon
+          name={focused ? icons.iconActive : icons.icon}
           size={JUI.ICON_MD}
           color={focused ? BRAND.RED : BRAND.TEXT3}
+          active={focused}
         />
+
+        {/* Tab badge for cart items */}
+        {route.name === 'cart' && cartCount > 0 && (
+          <View style={styles.tabBadge}>
+            <Text style={styles.tabBadgeText}>{cartCount > 9 ? '9+' : cartCount}</Text>
+          </View>
+        )}
       </Animated.View>
-      {/* Active dot indicator */}
-      {focused && <View style={styles.activeDot} />}
-      <Text style={[styles.tabLabel, focused && styles.tabLabelActive]}>
+
+      <Animated.Text style={[styles.tabLabel, focused && styles.tabLabelActive, labelAnimatedStyle]}>
         {label}
-      </Text>
+      </Animated.Text>
     </Pressable>
   );
 }
@@ -87,13 +123,14 @@ function FabButton() {
   const { t } = useLangStore();
   const cartCount = useCartStore(s => s.getItemCount());
   const pulseScale = useSharedValue(1);
+  const pressScale = useSharedValue(1);
 
   React.useEffect(() => {
     if (cartCount > 0) {
       pulseScale.value = withRepeat(
         withSequence(
-          withTiming(1.08, { duration: 800, easing: Easing.inOut(Easing.ease) }),
-          withTiming(1, { duration: 800, easing: Easing.inOut(Easing.ease) }),
+          withTiming(1.06, { duration: 900, easing: Easing.inOut(Easing.ease) }),
+          withTiming(1, { duration: 900, easing: Easing.inOut(Easing.ease) }),
         ),
         -1,
         false,
@@ -104,11 +141,15 @@ function FabButton() {
   }, [cartCount, pulseScale]);
 
   const pulseStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: pulseScale.value }],
+    transform: [{ scale: pulseScale.value * pressScale.value }],
   }));
 
   const handlePress = () => {
     if (Platform.OS !== 'web') Vibration.vibrate(1);
+    pressScale.value = withSequence(
+      withTiming(0.88, { duration: 70 }),
+      withSpring(1, { damping: 10, stiffness: 220 }),
+    );
     router.push('/(flows)/custom-request');
   };
 
@@ -116,7 +157,7 @@ function FabButton() {
     <Pressable
       style={({ pressed }) => [
         styles.fab,
-        pressed && { opacity: 0.9 },
+        pressed && { opacity: 0.92 },
       ]}
       onPress={handlePress}
       accessibilityLabel={t.newOrder}
@@ -217,6 +258,20 @@ const styles = StyleSheet.create({
     borderTopColor: '#F3F4F6',
     alignItems: 'center',
     paddingTop: 4,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: -3 },
+        shadowOpacity: 0.05,
+        shadowRadius: 10,
+      },
+      android: {
+        elevation: 8,
+      },
+      web: {
+        boxShadow: '0 -3px 14px rgba(0,0,0,0.04)',
+      } as any,
+    }),
   },
   bar: {
     alignItems: 'center',
@@ -233,29 +288,50 @@ const styles = StyleSheet.create({
 
   tabItem: {
     alignItems: 'center',
-    gap: 2,
+    justifyContent: 'center',
+    gap: 3,
     paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
+    paddingVertical: 2,
     ...Platform.select({ web: { outlineStyle: 'none' } as any }),
   },
   tabIconWrap: {
-    width: 32,
-    height: 28,
-    borderRadius: 10,
+    width: 44,
+    height: 30,
+    borderRadius: 15,
     alignItems: 'center',
     justifyContent: 'center',
+    position: 'relative',
   },
-  activeDot: {
-    width: 4,
-    height: 4,
-    borderRadius: 2,
+  activePill: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(240, 48, 48, 0.08)',
+    borderRadius: 15,
+    borderWidth: 1,
+    borderColor: 'rgba(240, 48, 48, 0.14)',
+  },
+  tabBadge: {
+    position: 'absolute',
+    top: -1,
+    right: 2,
+    minWidth: 16,
+    height: 16,
+    borderRadius: 8,
     backgroundColor: BRAND.RED,
-    marginTop: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 3,
+    borderWidth: 1.5,
+    borderColor: '#FFFFFF',
+  },
+  tabBadgeText: {
+    fontFamily: FONTS.SEMIBOLD,
+    fontSize: 8.5,
+    color: '#FFFFFF',
+    fontWeight: '700',
   },
   tabLabel: {
     fontFamily: FONTS.SEMIBOLD,
-    fontSize: 10,
+    fontSize: 10.5,
     color: BRAND.TEXT3,
   },
   tabLabelActive: {
@@ -278,6 +354,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'visible',
+    ...Platform.select({
+      ios: {
+        shadowColor: BRAND.RED,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.35,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 6,
+      },
+      web: {
+        boxShadow: '0 4px 14px rgba(240,48,48,0.35)',
+      } as any,
+    }),
   },
   fabIcon: { width: 28, height: 28 },
   fabBadge: {

@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Ionicons } from '@/components/ui/Ionicons';
+import { AppIcon } from '@/components/ui/AppIcon';
 import { BRAND, FONTS } from '../../../constants/brand';
 import { useAuth } from '../../../hooks/useAuth';
 import { getBackendAccessToken } from '../../../lib/backendApi';
@@ -140,7 +140,7 @@ export default function ChatThreadScreen() {
           accessibilityRole="button"
           accessibilityLabel="Retour"
         >
-          <Ionicons name="arrow-back" size={22} color={BRAND.TEXT} />
+          <AppIcon name="arrow-back" size={22} color={BRAND.TEXT} />
         </Pressable>
         <View style={styles.headerCenter}>
           <Text style={styles.headerTitle}>Chat commande</Text>
@@ -163,7 +163,7 @@ export default function ChatThreadScreen() {
           onContentSizeChange={() => flatRef.current?.scrollToEnd({ animated: false })}
           ListEmptyComponent={
             <View style={styles.emptyWrap}>
-              <Ionicons name="chatbubble-ellipses-outline" size={42} color={BRAND.TEXT3} />
+              <AppIcon name="chatbubble-ellipses-outline" size={42} color={BRAND.TEXT3} />
               <Text style={styles.emptyText}>Aucun message</Text>
             </View>
           }
@@ -205,7 +205,7 @@ export default function ChatThreadScreen() {
           {sending ? (
             <ActivityIndicator size={18} color={BRAND.SURFACE} />
           ) : (
-            <Ionicons name="send" size={18} color={BRAND.SURFACE} />
+            <AppIcon name="send" size={18} color={BRAND.SURFACE} />
           )}
         </Pressable>
       </View>

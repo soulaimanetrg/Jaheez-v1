@@ -13,6 +13,7 @@ export {
   InternalServerError,
   DatabaseError,
   GoneError,
+  TooManyRequestsError,
 } from '../utils/errors';
 
 export function errorHandler(
@@ -45,8 +46,10 @@ export function errorHandler(
 
   // Log unhandled exceptions with error level
   logger.error({
-    message: err.message,
-    stack: err.stack,
+    message: 'Unhandled request error',
+    error_type: err?.name || 'Error',
+    error_message: err?.message,
+    stack: err?.stack,
     reqId,
     url: req.originalUrl,
     method: req.method,

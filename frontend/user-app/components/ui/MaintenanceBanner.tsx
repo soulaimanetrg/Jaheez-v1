@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, Platform } from 'react-native';
-import { Ionicons } from '@/components/ui/Ionicons';
+import { AppIcon } from '@/components/ui/AppIcon';
 import { usePlatformStore } from '../../store/platformStore';
 import { useLangStore } from '../../store/languageStore';
 import { BRAND, FONTS } from '../../constants/brand';
@@ -17,7 +17,7 @@ export function MaintenanceBanner() {
 
   return (
     <View style={styles.root} accessibilityLiveRegion="polite" accessibilityRole="alert">
-      <Ionicons name="warning" size={16} color="#fff" />
+      <AppIcon name="warning" size={16} color="#fff" />
       <Text style={styles.txt} numberOfLines={2}>{msg}</Text>
     </View>
   );

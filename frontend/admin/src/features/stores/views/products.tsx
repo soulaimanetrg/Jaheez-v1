@@ -34,6 +34,8 @@ type OptionGroup = {
   nameAr?: string;
   required: boolean;
   multiple: boolean;
+  minSelections: number;
+  maxSelections: number;
   items: OptionItem[];
 };
 
@@ -134,6 +136,8 @@ function OptionGroupEditor({
       nameAr: "",
       required: false,
       multiple: false,
+      minSelections: 0,
+      maxSelections: 1,
       items: [],
     };
     const next = [...groups, newGroup];
@@ -218,7 +222,7 @@ function OptionGroupEditor({
                 <label className="flex items-center gap-1.5 text-xs text-muted-foreground cursor-pointer">
                   <Switch
                     checked={group.required}
-                    onCheckedChange={(v) => updateGroup(group.id, { required: v })}
+                    onCheckedChange={(v) => updateGroup(group.id, { required: v, minSelections: v ? 1 : 0 })}
                     className="scale-75"
                   />
                   Requis
@@ -226,11 +230,29 @@ function OptionGroupEditor({
                 <label className="flex items-center gap-1.5 text-xs text-muted-foreground cursor-pointer">
                   <Switch
                     checked={group.multiple}
-                    onCheckedChange={(v) => updateGroup(group.id, { multiple: v })}
+                    onCheckedChange={(v) => updateGroup(group.id, {
+                      multiple: v,
+                      // When enabling Multiple, auto-set maxSelections to all current items (min 2).
+                      // This prevents the group from silently staying at maxSelections=1 (= single-select behaviour).
+                      maxSelections: v ? Math.max(group.items.length > 1 ? group.items.length : 2, 2) : 1,
+                    })}
                     className="scale-75"
                   />
                   Multiple
                 </label>
+                {group.multiple && (
+                  <label className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                    Maximum
+                    <Input
+                      type="number"
+                      min="1"
+                      max="20"
+                      value={group.maxSelections}
+                      onChange={(e) => updateGroup(group.id, { maxSelections: Number(e.target.value) })}
+                      className="h-7 w-16 text-xs"
+                    />
+                  </label>
+                )}
               </div>
               <div className="flex items-center gap-2">
                 <Button
@@ -426,22 +448,27 @@ export default function Products() {
     
     // Parse bilingual options
     const parsedOptionGroups = ((product.options || []) as any[]).map((g) => {
-      const [gFr = "", gEn = ""] = (g.name || "").split("|").map((s: string) => s.trim());
+      const [gFr = "", gEn = ""] = (g.label || g.name || "").split("|").map((s: string) => s.trim());
+      const choices = g.choices || g.items || g.options || [];
+      const required = !!g.required || g.type === "required";
+      const multiple = !!g.multiple;
       return {
         id: g.id || String(Math.random()),
         name: gFr,
         nameEn: gEn,
-        nameAr: g.name_ar || "",
-        required: !!g.required,
-        multiple: !!g.multiple,
-        items: (g.items || g.options || []).map((i: any) => {
-          const [iFr = "", iEn = ""] = (i.name || "").split("|").map((s: string) => s.trim());
+        nameAr: g.label_ar || g.name_ar || "",
+        required,
+        multiple,
+        minSelections: Number.isInteger(g.min_selections) ? g.min_selections : required ? 1 : 0,
+        maxSelections: Number.isInteger(g.max_selections) ? g.max_selections : multiple ? Math.min(choices.length, 20) : 1,
+        items: choices.map((i: any) => {
+          const [iFr = "", iEn = ""] = (i.label || i.name || "").split("|").map((s: string) => s.trim());
           return {
             id: i.id || String(Math.random()),
             name: iFr,
             nameEn: iEn,
-            nameAr: i.name_ar || "",
-            price: Number(i.price || i.price_delta || 0),
+            nameAr: i.label_ar || i.name_ar || "",
+            price: Number(i.price_delta_dh ?? i.price_delta ?? i.price ?? 0),
           };
         }),
       };
@@ -493,33 +520,73 @@ export default function Products() {
       return;
     }
 
+    const groupIds = new Set<string>();
+    for (const group of form.optionGroups) {
+      if (!group.name.trim() && !group.nameEn?.trim() && !group.nameAr?.trim()) {
+        toast({ title: "Le nom du groupe d’options est obligatoire", variant: "destructive" });
+        return;
+      }
+      if (!group.id || groupIds.has(group.id)) {
+        toast({ title: "Identifiants de groupes dupliqués", variant: "destructive" });
+        return;
+      }
+      groupIds.add(group.id);
+      const choiceIds = new Set<string>();
+      for (const choice of group.items) {
+        if (!choice.name.trim() && !choice.nameEn?.trim() && !choice.nameAr?.trim()) {
+          toast({ title: "Le nom de chaque choix est obligatoire", variant: "destructive" });
+          return;
+        }
+        if (!choice.id || choiceIds.has(choice.id)) {
+          toast({ title: "Identifiants de choix dupliqués", variant: "destructive" });
+          return;
+        }
+        choiceIds.add(choice.id);
+        if (!Number.isFinite(choice.price) || choice.price < 0) {
+          toast({ title: "Prix de supplément invalide", variant: "destructive" });
+          return;
+        }
+      }
+      const minSelections = group.required ? 1 : 0;
+      const maxSelections = group.multiple ? group.maxSelections : 1;
+      if (
+        (group.required && group.items.length === 0)
+        || !Number.isInteger(maxSelections)
+        || maxSelections < 1
+        || maxSelections > Math.min(group.items.length, 20)
+        || minSelections > maxSelections
+      ) {
+        toast({ title: "Limites de sélection invalides", variant: "destructive" });
+        return;
+      }
+    }
+
     // Map trilingual option groups
     const optionGroupsPayload = form.optionGroups.map((g) => {
-      const gFrName = g.name.trim() || g.nameEn?.trim() || "Option";
+      const gFrName = g.name.trim() || g.nameEn?.trim() || g.nameAr?.trim() || '';
       const gEnName = g.nameEn?.trim() || "";
       const combinedGroupName = buildBilingualText(gFrName, gEnName);
       
       const mappedItems = g.items.map((i) => {
-        const iFrName = i.name.trim() || i.nameEn?.trim() || "Choice";
+        const iFrName = i.name.trim() || i.nameEn?.trim() || i.nameAr?.trim() || '';
         const iEnName = i.nameEn?.trim() || "";
         const combinedItemName = buildBilingualText(iFrName, iEnName);
         return {
           id: i.id,
-          name: combinedItemName,
-          name_ar: i.nameAr?.trim() || iFrName,
-          price: Number(i.price),
-          price_delta: Number(i.price),
+          label: combinedItemName,
+          label_ar: i.nameAr?.trim() || iFrName,
+          price_delta_dh: Number(i.price),
         };
       });
       return {
         id: g.id,
-        name: combinedGroupName,
-        name_ar: g.nameAr?.trim() || gFrName,
+        label: combinedGroupName,
+        label_ar: g.nameAr?.trim() || gFrName,
         required: g.required,
         multiple: g.multiple,
-        type: g.required ? "required" : "optional", // Compatibility for user app
-        items: mappedItems, // Admin editor
-        options: mappedItems, // Compatibility for user app options mapping
+        min_selections: g.required ? 1 : 0,
+        max_selections: g.multiple ? g.maxSelections : 1,
+        choices: mappedItems,
       };
     });
 

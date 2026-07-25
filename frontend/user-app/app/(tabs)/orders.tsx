@@ -13,7 +13,7 @@ import {
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Ionicons } from '@/components/ui/Ionicons';
+import { AppIcon } from '@/components/ui/AppIcon';
 import { HapticTab } from '../../components/ui/HapticTab';
 import SkeletonBox from '../../components/ui/SkeletonBox';
 import { BRAND, FONTS } from '../../constants/brand';
@@ -301,7 +301,7 @@ export default function OrdersScreen() {
         onPress={() => router.canGoBack() ? router.back() : router.replace('/(tabs)')}
         accessibilityLabel={t.title}
       >
-        <Ionicons name={isRTL ? "arrow-forward" : "arrow-back"} size={22} color={BRAND.TEXT} />
+        <AppIcon name={isRTL ? "arrow-forward" : "arrow-back"} size={22} color={BRAND.TEXT} />
       </HapticTab>
 
       <View style={styles.fixedHeaderCenter}>
@@ -394,7 +394,7 @@ export default function OrdersScreen() {
                         <Image source={{ uri: logo }} style={styles.simpleStoreLogo} contentFit="cover" />
                       ) : (
                         <View style={[styles.simpleStoreLogo, styles.imagePlaceholder]}>
-                          <Ionicons name="storefront-outline" size={28} color={BRAND.TEXT3} />
+                          <AppIcon name="storefront-outline" size={28} color={BRAND.TEXT3} />
                         </View>
                       )}
                       <View style={[styles.simpleOrderInfo, { alignItems: dirItems(isRTL) }]}>

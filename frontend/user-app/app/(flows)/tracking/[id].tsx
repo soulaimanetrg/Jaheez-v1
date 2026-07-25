@@ -310,12 +310,14 @@ export default function TrackingScreen() {
           {/* Avatar */}
           <View style={styles.driverAvatar}>
             <Ionicons name="person" size={28} color={BRAND.TEXT3} />
-            <View style={styles.driverRating}>
-              <Ionicons name="star" size={10} color="#FFF" />
-              <Text style={styles.driverRatingText}>
-                {o?.driver?.rating_avg?.toFixed(1) ?? '4.8'}
-              </Text>
-            </View>
+            {o?.driver?.rating_avg != null && (
+              <View style={styles.driverRating}>
+                <Ionicons name="star" size={10} color="#FFF" />
+                <Text style={styles.driverRatingText}>
+                  {Number(o.driver.rating_avg).toFixed(1)}
+                </Text>
+              </View>
+            )}
           </View>
 
           {/* Info */}

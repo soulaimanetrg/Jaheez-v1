@@ -1,3 +1,4 @@
+import { AppIcon } from '@/components/ui/AppIcon';
 import { useEffect, useState } from 'react';
 import { View, Text, Pressable, ScrollView, ActivityIndicator, Alert, Linking, Modal, TextInput } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -7,6 +8,7 @@ import { BRAND, FONTS, SHADOW } from '@/constants/brand';
 import { useLangStore } from '@/lib/i18n';
 import { driverApi, type OrderRow } from '@/lib/api';
 import * as ImagePicker from 'expo-image-picker';
+import { generateSecureUUID } from '@/lib/uuid';
 
 const STAGES: Array<{
   key: 'arrived_pickup' | 'picked_up' | 'arrived_customer' | 'delivered';
@@ -87,8 +89,8 @@ export function ActiveDeliveryScreen() {
       if(!asset.base64)throw new Error('Image invalide.');
       const mime=(asset.mimeType||'image/jpeg') as 'image/jpeg'|'image/png'|'image/webp';
       if(!['image/jpeg','image/png','image/webp'].includes(mime))throw new Error('Format image non autorisé.');
-      const uuid=globalThis.crypto?.randomUUID?.();
-      if(!uuid)throw new Error('Identifiant sécurisé indisponible.');
+      const uuid = generateSecureUUID();
+      if (!uuid) throw new Error('Identifiant sécurisé indisponible.');
       await driverApi.uploadErrandProof(order.id,proofType,mime,asset.base64,`proof:${uuid}`);
       Alert.alert('Preuve enregistrée','La photo a été stockée de manière sécurisée.');
     }catch(error:any){Alert.alert('Erreur',error?.message||'Impossible d’envoyer la preuve.');}
@@ -121,7 +123,7 @@ export function ActiveDeliveryScreen() {
     <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: BRAND.BG }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12 }}>
         <Pressable onPress={() => router.back()} style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: BRAND.SURFACE, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: BRAND.BORDER }}>
-          <ChevronLeft size={22} color={BRAND.TEXT} />
+          <AppIcon icon={ChevronLeft} size={22} color={BRAND.TEXT} />
         </Pressable>
         <Text style={{ marginLeft: 12, fontFamily: FONTS.DISPLAY, fontSize: 18, color: BRAND.TEXT }}>{t.activeDelivery}</Text>
       </View>
@@ -144,7 +146,7 @@ export function ActiveDeliveryScreen() {
               <View key={s.key} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 6 }}>
                 <View style={{ width: 26, height: 26, borderRadius: 13, alignItems: 'center', justifyContent: 'center',
                   backgroundColor: done ? BRAND.GREEN : active ? BRAND.RED : BRAND.LIGHT }}>
-                  {done ? <CheckCircle2 size={16} color="#fff" />
+                  {done ? <AppIcon icon={CheckCircle2} size={16} color="#fff" />
                     : <Text style={{ color: '#fff', fontFamily: FONTS.DISPLAY, fontSize: 12 }}>{i + 1}</Text>}
                 </View>
                 <Text style={{ flex: 1, fontFamily: FONTS.SEMIBOLD, fontSize: 13, color: done ? BRAND.GREEN : active ? BRAND.TEXT : BRAND.TEXT3 }}>
@@ -164,7 +166,7 @@ export function ActiveDeliveryScreen() {
             {lang === 'ar' && (order as any).store_name_ar ? (order as any).store_name_ar : (order as any).store_name || 'Magasin'}
           </Text>
           <Pressable onPress={() => openNavigation('pickup')} style={{ flexDirection: 'row', gap: 8 }}>
-            <MapPin size={18} color={BRAND.GREEN} style={{ marginTop: 2 }} />
+            <AppIcon icon={MapPin} size={18} color={BRAND.GREEN} style={{ marginTop: 2 }} />
             <Text style={{ flex: 1, fontFamily: FONTS.BODY, fontSize: 14, color: BRAND.TEXT, lineHeight: 20 }}>
               {lang === 'ar' && (order as any).store_address_ar ? (order as any).store_address_ar : (order as any).store_address || '—'}
             </Text>
@@ -172,13 +174,13 @@ export function ActiveDeliveryScreen() {
           <View style={{ flexDirection: 'row', gap: 8, marginTop: 12 }}>
             <Pressable onPress={() => openNavigation('pickup')} disabled={navigationBusy === 'pickup'}
               style={{ flex: 1, paddingVertical: 10, borderRadius: 10, backgroundColor: BRAND.LIGHT, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 6, opacity: navigationBusy === 'pickup' ? 0.65 : 1 }}>
-              {navigationBusy === 'pickup' ? <ActivityIndicator size="small" color={BRAND.TEXT} /> : <Map size={14} color={BRAND.TEXT} />}
+              {navigationBusy === 'pickup' ? <ActivityIndicator size="small" color={BRAND.TEXT} /> : <AppIcon icon={Map} size={14} color={BRAND.TEXT} />}
               <Text style={{ fontFamily: FONTS.SEMIBOLD, fontSize: 12, color: BRAND.TEXT }}>{t.openMap}</Text>
             </Pressable>
             {!!(order as any).store_phone && (
               <Pressable onPress={() => Linking.openURL('tel:' + (order as any).store_phone)}
                 style={{ flex: 1, paddingVertical: 10, borderRadius: 10, backgroundColor: BRAND.LIGHT, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 6 }}>
-                <Phone size={14} color={BRAND.TEXT} />
+                <AppIcon icon={Phone} size={14} color={BRAND.TEXT} />
                 <Text style={{ fontFamily: FONTS.SEMIBOLD, fontSize: 12, color: BRAND.TEXT }}>
                   {lang === 'ar' ? 'اتصل بالمتجر' : (lang === 'en' ? 'Call Store' : 'Appeler le magasin')}
                 </Text>
@@ -194,7 +196,7 @@ export function ActiveDeliveryScreen() {
             {(order as any).customer_name || 'Client'}
           </Text>
           <Pressable onPress={() => openNavigation('dropoff')} style={{ flexDirection: 'row', gap: 8 }}>
-            <MapPin size={18} color={BRAND.RED} style={{ marginTop: 2 }} />
+            <AppIcon icon={MapPin} size={18} color={BRAND.RED} style={{ marginTop: 2 }} />
             <Text style={{ flex: 1, fontFamily: FONTS.BODY, fontSize: 14, color: BRAND.TEXT, lineHeight: 20 }}>{order.delivery_address}</Text>
           </Pressable>
           {!!order.notes && (
@@ -209,7 +211,7 @@ export function ActiveDeliveryScreen() {
               gap: 8,
               alignItems: 'center'
             }}>
-              <AlertTriangle size={20} color={BRAND.YELLOW_DARK} style={{ flexShrink: 0 }} />
+              <AppIcon icon={AlertTriangle} size={20} color={BRAND.YELLOW_DARK} style={{ flexShrink: 0 }} />
               <View style={{ flex: 1 }}>
                 <Text style={{ fontFamily: FONTS.SEMIBOLD, fontSize: 12, color: BRAND.YELLOW_DARK }}>
                   {lang === 'ar' ? 'تعليمات الزبون المهمة:' : (lang === 'en' ? 'Important Customer Note:' : 'Remarque client importante :')}
@@ -223,13 +225,13 @@ export function ActiveDeliveryScreen() {
           <View style={{ flexDirection: 'row', gap: 8, marginTop: 12 }}>
             <Pressable onPress={() => openNavigation('dropoff')} disabled={navigationBusy === 'dropoff'}
               style={{ flex: 1, paddingVertical: 10, borderRadius: 10, backgroundColor: BRAND.LIGHT, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 6, opacity: navigationBusy === 'dropoff' ? 0.65 : 1 }}>
-              {navigationBusy === 'dropoff' ? <ActivityIndicator size="small" color={BRAND.TEXT} /> : <Map size={14} color={BRAND.TEXT} />}
+              {navigationBusy === 'dropoff' ? <ActivityIndicator size="small" color={BRAND.TEXT} /> : <AppIcon icon={Map} size={14} color={BRAND.TEXT} />}
               <Text style={{ fontFamily: FONTS.SEMIBOLD, fontSize: 12, color: BRAND.TEXT }}>{t.openMap}</Text>
             </Pressable>
             {!!(order as any).customer_phone && (
               <Pressable onPress={() => Linking.openURL('tel:' + (order as any).customer_phone)}
                 style={{ flex: 1, paddingVertical: 10, borderRadius: 10, backgroundColor: BRAND.LIGHT, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 6 }}>
-                <Phone size={14} color={BRAND.TEXT} />
+                <AppIcon icon={Phone} size={14} color={BRAND.TEXT} />
                 <Text style={{ fontFamily: FONTS.SEMIBOLD, fontSize: 12, color: BRAND.TEXT }}>{t.callCustomer}</Text>
               </Pressable>
             )}
@@ -372,7 +374,7 @@ export function ActiveDeliveryScreen() {
 
             <Pressable onPress={() => setIssueOpen(true)}
               style={{ marginTop: 12, paddingVertical: 14, borderRadius: 14, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 8, backgroundColor: BRAND.SURFACE, borderWidth: 1, borderColor: BRAND.WARN }}>
-              <AlertTriangle size={16} color={BRAND.WARN} />
+              <AppIcon icon={AlertTriangle} size={16} color={BRAND.WARN} />
               <Text style={{ color: BRAND.WARN, fontFamily: FONTS.SEMIBOLD, fontSize: 14 }}>Signaler un problème</Text>
             </Pressable>
 
@@ -380,7 +382,7 @@ export function ActiveDeliveryScreen() {
             {order.status !== 'delivered' && order.status !== 'completed' && order.status !== 'cancelled' && (
               <Pressable onPress={() => setCancelOpen(true)}
                 style={{ marginTop: 12, paddingVertical: 14, borderRadius: 14, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 8, backgroundColor: BRAND.SURFACE, borderWidth: 1, borderColor: BRAND.RED }}>
-                <X size={16} color={BRAND.RED} />
+                <AppIcon icon={X} size={16} color={BRAND.RED} />
                 <Text style={{ color: BRAND.RED, fontFamily: FONTS.SEMIBOLD, fontSize: 14 }}>
                   {lang === 'ar' ? 'إلغاء الطلب' : (lang === 'en' ? 'Cancel Order' : 'Annuler la commande')}
                 </Text>
@@ -452,7 +454,7 @@ function IssueSheet({ visible, orderId, onClose, onSubmitted }: {
             <Text style={{ fontFamily: FONTS.DISPLAY, fontSize: 18, color: BRAND.TEXT }}>Signaler un problème</Text>
             <Pressable onPress={onClose} hitSlop={10}
               style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: BRAND.LIGHT, alignItems: 'center', justifyContent: 'center' }}>
-              <X size={16} color={BRAND.TEXT2} />
+              <AppIcon icon={X} size={16} color={BRAND.TEXT2} />
             </Pressable>
           </View>
 
@@ -521,7 +523,7 @@ function CancelOrderSheet({ visible, orderId, onClose, onSubmitted, lang }: {
             </Text>
             <Pressable onPress={onClose} hitSlop={10}
               style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: BRAND.LIGHT, alignItems: 'center', justifyContent: 'center' }}>
-              <X size={16} color={BRAND.TEXT2} />
+              <AppIcon icon={X} size={16} color={BRAND.TEXT2} />
             </Pressable>
           </View>
 

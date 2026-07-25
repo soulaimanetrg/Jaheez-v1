@@ -1,6 +1,8 @@
 import { StoreRepository, StoreRow, SUB_CAT_TRANSLATIONS } from './store.repository';
 import { NotFoundError } from '../../middleware/error.middleware';
 import { supabase } from '../../db/supabase';
+import { getStoreClosesAt, isStoreCurrentlyOpen } from './storeStatus';
+import { normalizeOptionGroups, type CanonicalOptionGroup } from '../order/optionGroups';
 
 type StoreWithDistance = StoreRow & { distance: number | null };
 
@@ -158,7 +160,17 @@ export class StoreService {
     const store = await this.repo.getStoreById(storeId);
     if (!store) throw new NotFoundError('Magasin introuvable', 'store_not_found');
     const enriched = await this.enrichStoresWithPromo([store]);
-    return enriched[0];
+    const result = enriched[0];
+    const status = isStoreCurrentlyOpen(result);
+    return {
+      ...result,
+      store_status: {
+        is_open: status.isOpen,
+        label_fr: status.labelFr,
+        label_ar: status.labelAr,
+        closes_at: status.isOpen ? getStoreClosesAt(result) : null,
+      },
+    } as StoreRow;
   }
 
   async enrichStoresWithPromo(stores: any[]) {
@@ -288,7 +300,14 @@ export class StoreService {
             ? item.options
             : null;
           const storedPromotion = optionsObject?.['__jaheez_product_promo'] || null;
-          const optionGroups = optionsObject?.groups || (Array.isArray(item.options) ? item.options : item.option_groups) || [];
+          const rawOptionGroups = optionsObject?.groups || (Array.isArray(item.options) ? item.options : item.option_groups) || [];
+          let optionGroups: CanonicalOptionGroup[] = [];
+          let optionConfigurationValid = true;
+          try {
+            optionGroups = normalizeOptionGroups(rawOptionGroups);
+          } catch {
+            optionConfigurationValid = false;
+          }
           const originalPriceDh = Number(item.price || 0);
           const candidatePromoPriceDh = Number(item.promo_price ?? storedPromotion?.promo_price ?? 0);
           const promoUntil = item.promo_until ?? storedPromotion?.promo_until ?? null;
@@ -318,6 +337,8 @@ export class StoreService {
             original_price_dh: originalPriceDh,
             has_active_promotion: hasActivePromotion,
             promotion_label: promotionLabel,
+            ordering_available: optionConfigurationValid,
+            option_configuration_valid: optionConfigurationValid,
           };
         }),
     }));

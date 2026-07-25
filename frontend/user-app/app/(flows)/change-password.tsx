@@ -6,7 +6,7 @@ import {
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Ionicons } from '@/components/ui/Ionicons';
+import { AppIcon } from '@/components/ui/AppIcon';
 import { MotiView } from 'moti';
 import { BRAND, FONTS, SHADOW, SHADOW_RED } from '../../constants/brand';
 import { useLangStore } from '../../store/languageStore';
@@ -91,7 +91,7 @@ export default function ChangePasswordScreen() {
           onPress={() => router.canGoBack() ? router.back() : router.replace('/(tabs)/profile')}
           accessibilityLabel={t.back}
         >
-          <Ionicons name={isRTL ? 'chevron-forward' : 'chevron-back'} size={22} color="rgba(255,255,255,0.9)" />
+          <AppIcon name={isRTL ? 'chevron-forward' : 'chevron-back'} size={22} color="rgba(255,255,255,0.9)" />
         </Pressable>
         <View style={s.heroContent}>
           <Text style={s.heroLogo}>JaheeZ</Text>
@@ -128,14 +128,14 @@ export default function ChangePasswordScreen() {
               transition={{ type: 'timing', duration: 240 } as any}
               style={s.errorBanner}
             >
-              <Ionicons name="alert-circle" size={16} color={BRAND.ERROR} />
+              <AppIcon name="alert-circle" size={16} color={BRAND.ERROR} />
               <Text style={s.errorText}>{errorMsg}</Text>
             </MotiView>
           )}
 
           {/* ── CURRENT PASSWORD INPUT ── */}
           <View style={s.inputRow}>
-            <Ionicons name="lock-closed-outline" size={20} color={BRAND.RED} style={s.inputIcon} />
+            <AppIcon name="lock-closed-outline" size={20} color={BRAND.RED} style={s.inputIcon} />
             <TextInput
               style={s.inputField}
               placeholder={isRTL ? 'كلمة المرور الحالية' : 'Mot de passe actuel'}
@@ -147,13 +147,13 @@ export default function ChangePasswordScreen() {
               autoComplete="password"
             />
             <Pressable onPress={() => setShowCurrentPw(!showCurrentPw)} style={s.eyeBtn} accessibilityLabel="إظهار/إخفاء">
-              <Ionicons name={showCurrentPw ? 'eye-outline' : 'eye-off-outline'} size={20} color={BRAND.TEXT3} />
+              <AppIcon name={showCurrentPw ? 'eye-outline' : 'eye-off-outline'} size={20} color={BRAND.TEXT3} />
             </Pressable>
           </View>
 
           {/* ── NEW PASSWORD INPUT ── */}
           <View style={s.inputRow}>
-            <Ionicons name="lock-closed-outline" size={20} color={BRAND.RED} style={s.inputIcon} />
+            <AppIcon name="lock-closed-outline" size={20} color={BRAND.RED} style={s.inputIcon} />
             <TextInput
               style={s.inputField}
               placeholder={isRTL ? 'كلمة المرور الجديدة' : 'Nouveau mot de passe'}
@@ -165,13 +165,13 @@ export default function ChangePasswordScreen() {
               autoComplete="password"
             />
             <Pressable onPress={() => setShowPw(!showPw)} style={s.eyeBtn} accessibilityLabel="إظهار/إخفاء">
-              <Ionicons name={showPw ? 'eye-outline' : 'eye-off-outline'} size={20} color={BRAND.TEXT3} />
+              <AppIcon name={showPw ? 'eye-outline' : 'eye-off-outline'} size={20} color={BRAND.TEXT3} />
             </Pressable>
           </View>
 
           {/* ── CONFIRM PASSWORD INPUT ── */}
           <View style={s.inputRow}>
-            <Ionicons name="lock-closed-outline" size={20} color={BRAND.RED} style={s.inputIcon} />
+            <AppIcon name="lock-closed-outline" size={20} color={BRAND.RED} style={s.inputIcon} />
             <TextInput
               style={s.inputField}
               placeholder={isRTL ? 'تأكيد كلمة المرور الجديدة' : 'Confirmer le mot de passe'}
@@ -183,7 +183,7 @@ export default function ChangePasswordScreen() {
               autoComplete="password"
             />
             <Pressable onPress={() => setShowConfirmPw(!showConfirmPw)} style={s.eyeBtn} accessibilityLabel="إظهار/إخفاء">
-              <Ionicons name={showConfirmPw ? 'eye-outline' : 'eye-off-outline'} size={20} color={BRAND.TEXT3} />
+              <AppIcon name={showConfirmPw ? 'eye-outline' : 'eye-off-outline'} size={20} color={BRAND.TEXT3} />
             </Pressable>
           </View>
 

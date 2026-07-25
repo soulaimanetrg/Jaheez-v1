@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { Animated, View, Text, StyleSheet } from 'react-native';
-import { Ionicons } from '@/components/ui/Ionicons';
+import { AppIcon } from '@/components/ui/AppIcon';
 import { useNetworkStatus } from '../../hooks/useNetworkStatus';
 import { FONTS } from '../../constants/brand';
 
@@ -19,9 +19,9 @@ export function OfflineBanner() {
   return (
     <Animated.View style={[styles.banner, { transform: [{ translateY: slideAnim }] }]}>
       <View style={styles.inner}>
-        <Ionicons name="wifi-outline" size={16} color="#FFF" />
+        <AppIcon name="wifi-outline" size={16} color="#FFF" />
         <Text style={styles.text}>تحقق من اتصالك بالإنترنت</Text>
-        <Ionicons name="refresh-circle-outline" size={16} color="#FFF" />
+        <AppIcon name="refresh-circle-outline" size={16} color="#FFF" />
       </View>
     </Animated.View>
   );

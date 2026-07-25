@@ -9,7 +9,7 @@ import {
   TextInputProps,
   I18nManager,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { AppIcon } from '@/components/ui/AppIcon';
 import { BRAND, FONTS, RADIUS, SIZE, SPACE } from '../../constants/brand';
 
 interface InputProps extends Omit<TextInputProps, 'style'> {
@@ -56,7 +56,7 @@ export function Input({
             accessibilityLabel="Select country code"
           >
             <Text style={styles.countryCodeText}>{countryCode}</Text>
-            <Ionicons name="chevron-down" size={14} color={BRAND.TEXT2} />
+            <AppIcon name="chevron-down" size={14} color={BRAND.TEXT2} />
             <View style={styles.codeDivider} />
           </Pressable>
         )}
@@ -84,7 +84,7 @@ export function Input({
             onPress={() => setShowPassword(!showPassword)}
             accessibilityLabel={showPassword ? 'Hide password' : 'Show password'}
           >
-            <Ionicons name={showPassword ? 'eye-outline' : 'eye-off-outline'} size={20} color={BRAND.TEXT3} />
+            <AppIcon name={showPassword ? 'eye-outline' : 'eye-off-outline'} size={20} color={BRAND.TEXT3} />
           </Pressable>
         )}
 

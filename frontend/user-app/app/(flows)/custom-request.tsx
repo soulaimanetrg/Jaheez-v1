@@ -2,12 +2,13 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Ionicons } from '@/components/ui/Ionicons';
+import { AppIcon } from '@/components/ui/AppIcon';
 import { BRAND, FONTS, SHADOW_SM, SHADOW_RED } from '../../constants/brand';
 import { useAuthStore } from '../../store/authStore';
 import { useLangStore } from '../../store/languageStore';
 import { dirRow, dirText } from '../../lib/direction';
 import { createErrandDraft, ErrandDraftInput, ErrandItemCategory, ErrandQuote, ErrandServiceType, getErrandAvailability, getErrandQuote, listErrandAddresses, quoteErrand, SavedAddress, submitErrand } from '../../lib/errandApi';
+import { generateSecureUUID } from '@/lib/uuid';
 
 type ScreenState = 'form' | 'loading' | 'review' | 'success' | 'error';
 
@@ -40,23 +41,7 @@ function chipLabel(value: string, lang: string): string {
 }
 
 function makeKey() {
-  try {
-    const uuid = globalThis.crypto?.randomUUID?.();
-    if (uuid) return `errand:${uuid}`;
-    if (globalThis.crypto?.getRandomValues) {
-      const bytes = new Uint8Array(16);
-      globalThis.crypto.getRandomValues(bytes);
-      const hex = Array.from(bytes, v => v.toString(16).padStart(2, '0')).join('');
-      if (hex && !/^0+$/.test(hex)) return `errand:${hex}`;
-    }
-  } catch {
-    // Ignore and fall through to Math.random fallback
-  }
-
-  // Fallback for React Native / Expo environment
-  const timestamp = Date.now().toString(36);
-  const randomPart = Math.floor(Math.random() * 1e15).toString(36);
-  return `errand:${timestamp}:${randomPart}`;
+  return `errand:${generateSecureUUID()}`;
 }
 
 export default function GuidedErrandScreen() {
@@ -177,7 +162,7 @@ export default function GuidedErrandScreen() {
     return (
       <View style={styles.center}>
         <View style={styles.stateIcon}>
-          <Ionicons name="lock-closed-outline" size={30} color={BRAND.TEXT3} />
+          <AppIcon name="lock-closed-outline" size={30} color={BRAND.TEXT3} />
         </View>
         <Text style={styles.successTitle}>{lang === 'ar' ? 'الخدمة غير متاحة حاليًا' : 'Service temporairement indisponible'}</Text>
         <Text style={styles.muted}>{lang === 'ar' ? 'سيتم تفعيلها بعد إتمام اختبارات الأمان.' : 'Elle sera activée après validation complète de la sécurité.'}</Text>
@@ -201,7 +186,7 @@ export default function GuidedErrandScreen() {
     return (
       <View style={styles.center}>
         <View style={styles.successIcon}>
-          <Ionicons name="checkmark" size={36} color={BRAND.SURFACE} />
+          <AppIcon name="checkmark" size={36} color={BRAND.SURFACE} />
         </View>
         <Text style={styles.successTitle}>{text.success}</Text>
         <View style={styles.orderPill}>
@@ -272,7 +257,7 @@ export default function GuidedErrandScreen() {
               >
                 <View style={[styles.serviceTopRow, { flexDirection: dirRow(isRTL) }]}>
                   <View style={[styles.serviceIcon, active && styles.serviceIconSelected]}>
-                    <Ionicons name={item.icon} size={22} color={active ? BRAND.SURFACE : BRAND.RED} />
+                    <AppIcon name={item.icon} size={22} color={active ? BRAND.SURFACE : BRAND.RED} active={active} />
                   </View>
                   <View style={[styles.radio, active && styles.radioOn]}>
                     {active && <View style={styles.radioDot} />}
@@ -290,7 +275,7 @@ export default function GuidedErrandScreen() {
           <ActivityIndicator color={BRAND.RED} />
         ) : addresses.length === 0 ? (
           <Pressable style={styles.empty} onPress={() => router.push('/(flows)/addresses')} accessibilityRole="button" accessibilityLabel={text.emptyAddress}>
-            <Ionicons name="add-circle-outline" size={20} color={BRAND.RED} />
+            <AppIcon name="add-circle-outline" size={20} color={BRAND.RED} />
             <Text style={styles.emptyText}>{text.emptyAddress}</Text>
           </Pressable>
         ) : (
@@ -328,7 +313,7 @@ export default function GuidedErrandScreen() {
           accessibilityLabel={text.safety}
         >
           <View style={[styles.checkbox, safe && styles.checkboxOn]}>
-            {safe && <Ionicons name="checkmark" size={14} color={BRAND.SURFACE} />}
+            {safe && <AppIcon name="checkmark" size={14} color={BRAND.SURFACE} />}
           </View>
           <Text style={[styles.safetyText, { textAlign: dirText(isRTL) }]}>{text.safety}</Text>
         </Pressable>
@@ -347,7 +332,7 @@ function Header({ title, onBack, isRTL }: { title: string; onBack: () => void; i
   return (
     <View style={[styles.header, { flexDirection: dirRow(isRTL) }]}>
       <Pressable style={styles.back} onPress={onBack} accessibilityRole="button" accessibilityLabel="Back">
-        <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={20} color={BRAND.TEXT} />
+        <AppIcon name={isRTL ? 'arrow-forward' : 'arrow-back'} size={20} color={BRAND.TEXT} />
       </Pressable>
       <Text style={styles.headerTitle} numberOfLines={1}>{title}</Text>
       <View style={styles.back} />
@@ -394,7 +379,7 @@ function AddressPicker({ title, addresses, selected, onSelect, isRTL }: { title:
               accessibilityLabel={`${title}: ${a.label}`}
             >
               <View style={[styles.addressHead, { flexDirection: dirRow(isRTL) }]}>
-                <Ionicons name={active ? 'location' : 'location-outline'} size={14} color={active ? BRAND.RED : BRAND.TEXT3} />
+                <AppIcon name={active ? 'location' : 'location-outline'} size={14} color={active ? BRAND.RED : BRAND.TEXT3} active={active} />
                 <Text style={[styles.addressLabel, active && styles.addressLabelSelected]} numberOfLines={1}>{a.label}</Text>
               </View>
               <Text style={[styles.addressText, { textAlign: dirText(isRTL) }]} numberOfLines={1}>{a.address}</Text>
@@ -428,11 +413,11 @@ function ChipRow({ values, selected, onSelect, lang, isRTL }: { values: string[]
   );
 }
 
-function ReviewRow({ icon, label, value, isRTL }: { icon: React.ComponentProps<typeof Ionicons>['name']; label: string; value: string; isRTL: boolean }) {
+function ReviewRow({ icon, label, value, isRTL }: { icon: React.ComponentProps<typeof AppIcon>['name']; label: string; value: string; isRTL: boolean }) {
   return (
     <View style={[styles.reviewRow, { flexDirection: dirRow(isRTL) }]}>
       <View style={styles.reviewIcon}>
-        <Ionicons name={icon} size={15} color={BRAND.TEXT3} />
+        <AppIcon name={icon} size={15} color={BRAND.TEXT3} />
       </View>
       <Text style={styles.reviewLabel}>{label}</Text>
       <Text style={[styles.reviewValue, { textAlign: isRTL ? 'left' : 'right' }]} numberOfLines={2}>{value}</Text>

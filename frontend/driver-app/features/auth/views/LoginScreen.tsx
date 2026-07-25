@@ -1,3 +1,4 @@
+import { AppIcon } from '@/components/ui/AppIcon';
 import { useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, Text, TextInput, View } from 'react-native';
 import { useRouter } from 'expo-router';
@@ -55,13 +56,13 @@ export function LoginScreen() {
           style={{ width: 40, height: 40, borderRadius: 10, backgroundColor: BRAND.SURFACE, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: BRAND.BORDER }}
           accessibilityLabel="Retour"
         >
-          <ChevronLeft size={22} color={BRAND.TEXT} />
+          <AppIcon icon={ChevronLeft} size={22} color={BRAND.TEXT} />
         </Pressable>
       </View>
 
       <View style={{ flex: 1, paddingHorizontal: 24, paddingTop: 22 }}>
         <View style={{ width: 62, height: 62, borderRadius: 17, backgroundColor: BRAND.RED_LIGHT, alignItems: 'center', justifyContent: 'center', marginBottom: 22 }}>
-          <KeyRound size={30} color={BRAND.RED} />
+          <AppIcon icon={KeyRound} size={30} color={BRAND.RED} />
         </View>
         <Text style={{ fontFamily: FONTS.DISPLAY, fontSize: 28, color: BRAND.TEXT, marginBottom: 8 }}>Espace livreur</Text>
         <Text style={{ fontFamily: FONTS.BODY, fontSize: 15, color: BRAND.TEXT2, marginBottom: 30, lineHeight: 22 }}>

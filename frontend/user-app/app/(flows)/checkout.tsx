@@ -14,7 +14,8 @@ import {
 import { useFocusEffect } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Ionicons } from '@/components/ui/Ionicons';
+import { useShallow } from 'zustand/react/shallow';
+import { AppIcon } from '@/components/ui/AppIcon';
 import { BRAND, FONTS, RADIUS, SIZE, SPACE } from '@/constants/brand';
 import { TText } from '@/components/ui/TText';
 import { backArrow, dirRow, dirText } from '@/lib/direction';
@@ -30,6 +31,7 @@ import {
   type CustomerCheckoutAddress,
 } from '@/features/orders/services/orderApi';
 import { checkoutCopy } from '@/features/orders/checkoutCopy';
+import { parseCartBilingual } from '@/features/orders/cartFormatters';
 
 function addressDetails(address: CustomerCheckoutAddress) {
   return [address.building_info, address.nearby_landmark, address.city]
@@ -43,19 +45,55 @@ export default function CheckoutScreen() {
   const { user } = useAuth();
   const { lang, isRTL } = useLangStore();
   const copy = checkoutCopy(lang);
-  const { items, storeId, storeName, clearCart } = useCartStore();
+  const { items, storeId, storeName, promoCode, setPromo, clearPromo, deliveryNote, setDeliveryNote, clearCart } = useCartStore(useShallow((state) => ({
+    items: state.items,
+    storeId: state.storeId,
+    storeName: state.storeName,
+    promoCode: state.promoCode,
+    setPromo: state.setPromo,
+    clearPromo: state.clearPromo,
+    deliveryNote: state.deliveryNote,
+    setDeliveryNote: state.setDeliveryNote,
+    clearCart: state.clearCart,
+  })));
   const createOrder = useCreateOrder();
-  const [note, setNote] = useState('');
   const [address, setAddress] = useState<CustomerCheckoutAddress | null>(null);
   const [addressLoading, setAddressLoading] = useState(true);
   const [addressError, setAddressError] = useState(false);
 
-  const quote = useCheckoutQuote({ storeId, items, riderTip: 0 });
+  // Promo input state
+  const [promoInput, setPromoInput] = useState('');
+  const [promoError, setPromoError] = useState('');
+
+  const quote = useCheckoutQuote({ storeId, items, promoCode, riderTip: 0 });
   const checkoutItems = useMemo(() => toCheckoutItems(items), [items]);
   const itemCount = useMemo(
     () => items.reduce((total, item) => total + item.quantity, 0),
     [items],
   );
+
+  // Validate promo code response from backend
+  React.useEffect(() => {
+    if (!promoCode || !quote.data?.promo) return;
+    if (!quote.data.promo.is_valid) {
+      clearPromo();
+      setPromoInput('');
+      setPromoError(copy.promoInvalid);
+    }
+  }, [clearPromo, copy.promoInvalid, promoCode, quote.data?.promo]);
+
+  const handleApplyPromo = useCallback(() => {
+    const trimmed = promoInput.trim().toUpperCase();
+    if (!trimmed) return;
+    setPromoError('');
+    setPromo(trimmed);
+  }, [promoInput, setPromo]);
+
+  const handleRemovePromo = useCallback(() => {
+    clearPromo();
+    setPromoInput('');
+    setPromoError('');
+  }, [clearPromo]);
 
   const loadAddress = useCallback(async () => {
     if (!user?.id) {
@@ -84,7 +122,7 @@ export default function CheckoutScreen() {
   }, [quote.data?.items]);
 
   const addressComplete = Boolean(address?.address && address.lat != null && address.lng != null);
-  const actionLoading = addressLoading || quote.isLoading || createOrder.isPending;
+  const actionLoading = addressLoading || quote.isUpdating || createOrder.isPending;
   const primaryLabel = !addressComplete
     ? copy.completeAddress
     : quote.isError || !quote.data
@@ -105,7 +143,7 @@ export default function CheckoutScreen() {
     }
     if (!storeId || items.length === 0) {
       Alert.alert(copy.title, copy.emptyCart);
-      router.replace('/(flows)/cart');
+      router.replace('/(tabs)/cart');
       return;
     }
     if (!address || address.lat == null || address.lng == null) {
@@ -113,7 +151,7 @@ export default function CheckoutScreen() {
       router.push('/(flows)/addresses');
       return;
     }
-    if (!quote.data?.can_checkout) {
+    if (!quote.isQuoteCurrent || !quote.data?.can_checkout) {
       Alert.alert(copy.title, copy.quoteUnavailable);
       return;
     }
@@ -128,17 +166,16 @@ export default function CheckoutScreen() {
         delivery_address: address.address,
         delivery_lat: address.lat,
         delivery_lng: address.lng,
-        notes: note.trim() || null,
+        notes: deliveryNote.trim() || null,
         items: checkoutItems,
         payment_method: 'cash',
         rider_tip: 0,
-        promo_code: null,
+        promo_code: promoCode,
       });
       if (!order.order_id) throw new Error('missing_order_id');
       clearCart(storeId);
       router.replace(`/(flows)/confirmation?orderId=${encodeURIComponent(order.order_id)}` as never);
-    } catch (error) {
-      __DEV__ && console.error('[checkout] Order creation failed:', error);
+    } catch {
       Alert.alert(copy.title, copy.orderFailed);
     }
   };
@@ -163,7 +200,7 @@ export default function CheckoutScreen() {
   if (!storeId || items.length === 0) {
     return (
       <View style={[styles.center, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
-        <Ionicons name="bag-outline" size={40} color={BRAND.TEXT3} />
+        <AppIcon name="bag-outline" size={40} color={BRAND.TEXT3} />
         <Text style={[styles.emptyText, { textAlign: dirText(isRTL) }]}>{copy.emptyCart}</Text>
         <Pressable style={styles.secondaryButton} onPress={() => router.replace('/(tabs)')}>
           <Text style={styles.secondaryButtonText}>{copy.back}</Text>
@@ -178,10 +215,10 @@ export default function CheckoutScreen() {
         <Pressable
           accessibilityLabel={copy.back}
           hitSlop={8}
-          onPress={() => router.canGoBack() ? router.back() : router.replace('/(flows)/cart')}
+          onPress={() => router.canGoBack() ? router.back() : router.replace('/(tabs)/cart')}
           style={styles.iconButton}
         >
-          <Ionicons name={backArrow(isRTL)} size={22} color={BRAND.TEXT} />
+          <AppIcon name={backArrow(isRTL)} size={22} color={BRAND.TEXT} />
         </Pressable>
         <View style={styles.headerText}>
           <Text style={[styles.title, { textAlign: dirText(isRTL) }]}>{copy.title}</Text>
@@ -195,6 +232,7 @@ export default function CheckoutScreen() {
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.content}
         >
+          {/* Delivery Address */}
           <SectionTitle title={copy.address} isRTL={isRTL} />
           <View style={styles.section}>
             {addressLoading ? (
@@ -204,7 +242,7 @@ export default function CheckoutScreen() {
             ) : address ? (
               <View style={[styles.addressRow, { flexDirection: dirRow(isRTL) }]}>
                 <View style={styles.leadingIcon}>
-                  <Ionicons name="location" size={20} color={BRAND.RED} />
+                  <AppIcon name="location" size={20} color={BRAND.RED} />
                 </View>
                 <View style={styles.rowContent}>
                   <Text style={[styles.rowTitle, { textAlign: dirText(isRTL) }]}>{address.label || copy.address}</Text>
@@ -223,17 +261,18 @@ export default function CheckoutScreen() {
             ) : (
               <Pressable style={[styles.addressRow, { flexDirection: dirRow(isRTL) }]} onPress={() => router.push('/(flows)/addresses')}>
                 <View style={styles.leadingIcon}>
-                  <Ionicons name="add" size={20} color={BRAND.RED} />
+                  <AppIcon name="add" size={20} color={BRAND.RED} />
                 </View>
                 <Text style={[styles.rowTitle, styles.rowContent, { textAlign: dirText(isRTL) }]}>{copy.addressMissing}</Text>
-                <Ionicons name={isRTL ? 'chevron-back' : 'chevron-forward'} size={18} color={BRAND.TEXT3} />
+                <AppIcon name={isRTL ? 'chevron-back' : 'chevron-forward'} size={18} color={BRAND.TEXT3} />
               </Pressable>
             )}
           </View>
 
+          {/* Order Items */}
           <View style={[styles.sectionHeading, { flexDirection: dirRow(isRTL) }]}>
             <SectionTitle title={copy.order} isRTL={isRTL} compact />
-            <Pressable onPress={() => router.push('/(flows)/cart')} hitSlop={8}>
+            <Pressable onPress={() => router.canGoBack() ? router.back() : router.replace('/(tabs)/cart')} hitSlop={8}>
               <Text style={styles.link}>{copy.editCart}</Text>
             </Pressable>
           </View>
@@ -255,7 +294,7 @@ export default function CheckoutScreen() {
                   <TText ar={item.name_ar} style={[styles.rowTitle, { textAlign: dirText(isRTL) }]} />
                   {(item.selected_options || []).length > 0 ? (
                     <Text style={[styles.rowMeta, { textAlign: dirText(isRTL) }]} numberOfLines={2}>
-                      {(item.selected_options || []).map((option) => option.choice_name).filter(Boolean).join(' · ')}
+                      {(item.selected_options || []).map((option) => parseCartBilingual(option.choice_name, lang)).filter(Boolean).join(' · ')}
                     </Text>
                   ) : null}
                 </View>
@@ -267,19 +306,70 @@ export default function CheckoutScreen() {
             <Text style={[styles.itemCount, { textAlign: dirText(isRTL) }]}>{copy.quantity}: {itemCount}</Text>
           </View>
 
+          {/* Promo Code Section */}
+          <SectionTitle title={copy.promoCode} isRTL={isRTL} />
+          <View style={styles.section}>
+            {promoCode ? (
+              <View style={[styles.promoActiveRow, { flexDirection: dirRow(isRTL) }]}>
+                <View style={styles.leadingIcon}>
+                  <AppIcon name="pricetag" size={20} color={BRAND.GREEN} />
+                </View>
+                <View style={styles.rowContent}>
+                  <Text style={[styles.rowTitle, { textAlign: dirText(isRTL) }]}>{promoCode}</Text>
+                  {quote.data?.discount_dh ? (
+                    <Text style={[styles.promoDiscountText, { textAlign: dirText(isRTL) }]}>
+                      -{formatDh(quote.data.discount_dh)}
+                    </Text>
+                  ) : null}
+                </View>
+                <Pressable onPress={handleRemovePromo} hitSlop={8}>
+                  <Text style={styles.removePromoLink}>{copy.promoRemove}</Text>
+                </Pressable>
+              </View>
+            ) : (
+              <View style={[styles.promoInputRow, { flexDirection: dirRow(isRTL) }]}>
+                <TextInput
+                  value={promoInput}
+                  onChangeText={(val) => {
+                    setPromoInput(val.toUpperCase());
+                    setPromoError('');
+                  }}
+                  placeholder={copy.promoPlaceholder}
+                  placeholderTextColor={BRAND.TEXT3}
+                  style={[styles.promoInput, { textAlign: dirText(isRTL) }]}
+                  autoCapitalize="characters"
+                />
+                <Pressable
+                  style={[styles.applyPromoBtn, !promoInput.trim() && styles.disabled]}
+                  onPress={handleApplyPromo}
+                  disabled={!promoInput.trim()}
+                >
+                  <Text style={styles.applyPromoBtnText}>{copy.promoApply}</Text>
+                </Pressable>
+              </View>
+            )}
+            {promoError ? (
+              <Text style={[styles.promoErrorText, { textAlign: dirText(isRTL) }]}>
+                {promoError}
+              </Text>
+            ) : null}
+          </View>
+
+          {/* Payment Method */}
           <SectionTitle title={copy.payment} isRTL={isRTL} />
           <View style={[styles.section, styles.paymentRow, { flexDirection: dirRow(isRTL) }]}>
             <View style={styles.leadingIcon}>
-              <Ionicons name="cash-outline" size={20} color={BRAND.GREEN} />
+              <AppIcon name="cash-outline" size={20} color={BRAND.GREEN} />
             </View>
             <Text style={[styles.rowTitle, styles.rowContent, { textAlign: dirText(isRTL) }]}>{copy.cash}</Text>
-            <Ionicons name="checkmark-circle" size={20} color={BRAND.GREEN} />
+            <AppIcon name="checkmark-circle" size={20} color={BRAND.GREEN} />
           </View>
 
+          {/* Delivery Note */}
           <SectionTitle title={copy.note} isRTL={isRTL} />
           <TextInput
-            value={note}
-            onChangeText={setNote}
+            value={deliveryNote}
+            onChangeText={setDeliveryNote}
             maxLength={500}
             multiline
             placeholder={copy.notePlaceholder}
@@ -288,6 +378,7 @@ export default function CheckoutScreen() {
             style={styles.noteInput}
           />
 
+          {/* Price Summary Breakdown */}
           <SectionTitle title={copy.summary} isRTL={isRTL} />
           <View style={styles.section}>
             {quote.isLoading ? (
@@ -310,7 +401,7 @@ export default function CheckoutScreen() {
         <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, SPACE.MD) }]}>
           {primaryHint ? (
             <View style={[styles.footerNotice, { flexDirection: dirRow(isRTL) }]}>
-              <Ionicons name="information-circle-outline" size={18} color={BRAND.WARN} />
+              <AppIcon name="information-circle-outline" size={18} color={BRAND.WARN} />
               <Text style={[styles.footerNoticeText, { textAlign: dirText(isRTL) }]}>{primaryHint}</Text>
             </View>
           ) : null}
@@ -355,7 +446,7 @@ function LoadingRow({ label, isRTL }: { label: string; isRTL: boolean }) {
 function InlineError({ label, action, onPress, isRTL }: { label: string; action: string; onPress: () => void; isRTL: boolean }) {
   return (
     <View style={[styles.statusRow, { flexDirection: dirRow(isRTL) }]}>
-      <Ionicons name="alert-circle-outline" size={20} color={BRAND.ERROR} />
+      <AppIcon name="alert-circle-outline" size={20} color={BRAND.ERROR} />
       <Text style={[styles.errorText, styles.rowContent, { textAlign: dirText(isRTL) }]}>{label}</Text>
       <Pressable onPress={onPress} hitSlop={8}><Text style={styles.link}>{action}</Text></Pressable>
     </View>
@@ -422,4 +513,59 @@ const styles = StyleSheet.create({
   pressed: { opacity: 0.82 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: BRAND.BG, padding: SPACE.LG, gap: SPACE.MD },
   emptyText: { fontFamily: FONTS.BODY, fontSize: 15, color: BRAND.TEXT2 },
+
+  /* Promo Section Styles */
+  promoInputRow: {
+    padding: SPACE.SM,
+    alignItems: 'center',
+    gap: SPACE.SM,
+  },
+  promoInput: {
+    flex: 1,
+    height: 44,
+    backgroundColor: BRAND.INPUT_BG,
+    borderWidth: 1,
+    borderColor: BRAND.BORDER,
+    borderRadius: RADIUS.SM,
+    paddingHorizontal: SPACE.MD,
+    fontFamily: FONTS.SEMIBOLD,
+    fontSize: 14,
+    color: BRAND.TEXT,
+  },
+  applyPromoBtn: {
+    height: 44,
+    paddingHorizontal: SPACE.MD,
+    backgroundColor: BRAND.RED,
+    borderRadius: RADIUS.SM,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  applyPromoBtnText: {
+    fontFamily: FONTS.SEMIBOLD,
+    fontSize: 13,
+    color: BRAND.SURFACE,
+  },
+  promoActiveRow: {
+    padding: SPACE.MD,
+    alignItems: 'center',
+    gap: SPACE.SM,
+  },
+  promoDiscountText: {
+    fontFamily: FONTS.SEMIBOLD,
+    fontSize: 12,
+    color: BRAND.GREEN,
+    marginTop: 2,
+  },
+  removePromoLink: {
+    fontFamily: FONTS.SEMIBOLD,
+    fontSize: 13,
+    color: BRAND.RED,
+  },
+  promoErrorText: {
+    fontFamily: FONTS.BODY,
+    fontSize: 12,
+    color: BRAND.ERROR,
+    paddingHorizontal: SPACE.MD,
+    paddingBottom: SPACE.SM,
+  },
 });

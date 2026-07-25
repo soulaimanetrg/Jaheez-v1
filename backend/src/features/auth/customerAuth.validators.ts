@@ -3,19 +3,36 @@ import { z } from 'zod';
 const moroccanPhone = z.string().trim().min(8).max(30);
 
 export const customerRegisterSchema = z.object({
-  phone: moroccanPhone.optional(),
-  email: z.string().trim().email().max(254).optional(),
+  registration_proof: z.string().min(40).max(3000),
+  device_id: z.string().trim().min(16).max(200),
   password: z.string().min(10).max(128).regex(/[A-Za-z]/).regex(/[0-9]/),
   full_name: z.string().trim().min(2).max(120),
   language: z.enum(['ar','fr','en']).default('fr'),
   legal_consent_version: z.string().trim().min(1).max(40),
-}).strict().refine(value => Boolean(value.phone) !== Boolean(value.email), { message: 'Provide either phone or email.' });
+}).strict();
 
-export const customerLoginSchema = z.object({
+export const customerAuthContinueSchema = z.object({
   phone: moroccanPhone.optional(),
   email: z.string().trim().email().max(254).optional(),
-  password: z.string().min(1).max(128),
+  device_id: z.string().trim().min(16).max(200),
 }).strict().refine(value => Boolean(value.phone) !== Boolean(value.email), { message: 'Provide either phone or email.' });
+
+export const customerRegisterVerifySchema = z.object({
+  challenge_token: z.string().min(40).max(3000),
+  code: z.string().trim().regex(/^\d{6}$/),
+  device_id: z.string().trim().min(16).max(200),
+}).strict();
+
+export const customerRegisterResendSchema = z.object({
+  challenge_token: z.string().min(40).max(3000),
+  device_id: z.string().trim().min(16).max(200),
+}).strict();
+
+export const customerLoginSchema = z.object({
+  continuation_token: z.string().min(40).max(3000),
+  device_id: z.string().trim().min(16).max(200),
+  password: z.string().min(1).max(128),
+}).strict();
 
 export const customerVerifySignupSchema = z.object({
   phone: moroccanPhone,

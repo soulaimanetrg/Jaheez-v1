@@ -13,7 +13,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { AppIcon } from '@/components/ui/AppIcon';
 import { AppSearchBar } from '../../components/ui/AppSearchBar';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -413,7 +413,7 @@ export default function SearchScreen() {
             accessibilityRole="button"
             accessibilityLabel={lang === 'ar' ? '\u0631\u062c\u0648\u0639' : 'Retour'}
           >
-            <Ionicons
+            <AppIcon
               name="arrow-back"
               size={22}
               color={BRAND.TEXT}
@@ -448,10 +448,11 @@ export default function SearchScreen() {
                 onPress={() => handleServicePress(service.key)}
                 style={[styles.serviceChip, selected && styles.serviceChipActive]}
               >
-                <Ionicons
-                  name={service.icon as any}
+                <AppIcon
+                  name={service.icon}
                   size={15}
                   color={selected ? BRAND.SURFACE : BRAND.TEXT2}
+                  active={selected}
                 />
                 <Text style={[styles.serviceText, selected && styles.serviceTextActive]}>
                   {text[service.key]}{count > 0 && service.key !== 'all' ? ` ${count}` : ''}
@@ -465,7 +466,7 @@ export default function SearchScreen() {
       {!hasSearch ? (
         <View style={styles.initialState}>
           <View style={styles.initialIcon}>
-            <Ionicons name="search" size={28} color={BRAND.RED} />
+            <AppIcon name="search" size={28} color={BRAND.RED} />
           </View>
           <Text style={styles.initialTitle}>{text.hintTitle}</Text>
           <Text style={styles.initialSub}>{text.hintSub}</Text>
@@ -518,7 +519,7 @@ export default function SearchScreen() {
                   {!showAllProducts && products.length > 6 && (
                     <Pressable style={styles.moreButton} onPress={() => setShowAllProducts(true)}>
                       <Text style={styles.moreText}>{text.more}</Text>
-                      <Ionicons name="chevron-down" size={14} color={BRAND.RED} />
+                      <AppIcon name="chevron-down" size={14} color={BRAND.RED} />
                     </Pressable>
                   )}
                 </Section>
@@ -541,7 +542,7 @@ export default function SearchScreen() {
 
               {isEmpty && (
                 <View style={styles.emptyState}>
-                  <Ionicons name="search-outline" size={34} color={BRAND.TEXT3} />
+                  <AppIcon name="search-outline" size={34} color={BRAND.TEXT3} />
                   <Text style={styles.emptyTitle}>{text.noResults}</Text>
                   <Text style={styles.emptySub}>{text.noResultsSub}</Text>
                 </View>
@@ -559,7 +560,7 @@ function Section({ title, isRTL, children }: { title: string; isRTL: boolean; ch
     <View style={styles.section}>
       <View style={[styles.sectionHeader, { flexDirection: dirRow(isRTL) }]}>
         <Text style={styles.sectionTitle}>{title}</Text>
-        <Ionicons name="chevron-up" size={16} color={BRAND.TEXT} />
+        <AppIcon name="chevron-up" size={16} color={BRAND.TEXT} />
       </View>
       {children}
     </View>
@@ -596,9 +597,12 @@ function StoreRow({
 
   const image = resolveStoreImageUrl(store.logo_url || store.cover_url || undefined, FALLBACK_STORE);
   const open = store.is_open !== false;
-  const min = Number(store.delivery_time_min || 20);
-  const max = Number(store.delivery_time_max || 35);
-  const fee = Number(store.delivery_fee || 0);
+  // Only use real server values — no fake fallbacks
+  const min = store.delivery_time_min != null ? Number(store.delivery_time_min) : null;
+  const max = store.delivery_time_max != null ? Number(store.delivery_time_max) : null;
+  const fee = store.delivery_fee != null ? Number(store.delivery_fee) : null;
+  const hasRating = store.rating_avg != null && Number(store.rating_avg) > 0;
+  const hasTime = min != null && max != null;
 
   return (
     <Animated.View
@@ -614,16 +618,29 @@ function StoreRow({
             {displayStoreName(store, lang)}
           </Text>
           <View style={[styles.metaRow, { flexDirection: dirRow(isRTL) }]}>
-            <Ionicons name="star" size={13} color={BRAND.YELLOW} />
-            <Text style={styles.metaText}>{Number(store.rating_avg || 4.5).toFixed(1)}</Text>
-            <Text style={styles.metaDot}>•</Text>
-            <Text style={styles.metaText}>{min}–{max} min</Text>
-            <Text style={styles.metaDot}>•</Text>
-            <Text style={styles.metaText}>{fee === 0 ? '0 DH' : `${fee} DH`}</Text>
+            {hasRating && (
+              <>
+                <AppIcon name="star" size={13} color={BRAND.YELLOW} />
+                <Text style={styles.metaText}>{Number(store.rating_avg).toFixed(1)}</Text>
+              </>
+            )}
+            {hasRating && (hasTime || fee != null) && <Text style={styles.metaDot}>•</Text>}
+            {hasTime && (
+              <>
+                <Text style={styles.metaText}>{min}–{max} min</Text>
+                {fee != null && <Text style={styles.metaDot}>•</Text>}
+              </>
+            )}
+            {fee != null && (
+              <Text style={styles.metaText}>{fee === 0 ? '0 DH' : `${fee} DH`}</Text>
+            )}
           </View>
-          <Text style={[styles.openText, !open && styles.closedText]}>
-            {open ? openText : closedText}
-          </Text>
+          <View style={[styles.storeStatus, { flexDirection: dirRow(isRTL) }]}>
+            {!open && <AppIcon name="store-closed" size={14} color={BRAND.ERROR} />}
+            <Text style={[styles.openText, !open && styles.closedText]}>
+              {open ? openText : closedText}
+            </Text>
+          </View>
         </View>
       </Pressable>
     </Animated.View>
@@ -666,7 +683,7 @@ function ProductRow({
           <Text style={[styles.productSub, { textAlign: dirText(isRTL) }]} numberOfLines={1}>{product.subtitle}</Text>
           <Text style={styles.productPrice}>{formatDh(product.price)}</Text>
         </View>
-        <Ionicons name={isRTL ? 'chevron-back' : 'chevron-forward'} size={18} color={BRAND.TEXT2} />
+        <AppIcon name={isRTL ? 'chevron-back' : 'chevron-forward'} size={18} color={BRAND.TEXT2} />
       </Pressable>
     </Animated.View>
   );
@@ -857,6 +874,10 @@ const styles = StyleSheet.create({
     fontFamily: FONTS.MEDIUM,
     fontSize: 12,
     color: BRAND.GREEN,
+  },
+  storeStatus: {
+    alignItems: 'center',
+    gap: 4,
   },
   closedText: {
     color: BRAND.ERROR,

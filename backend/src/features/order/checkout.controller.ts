@@ -11,6 +11,17 @@ export class CheckoutController {
     return `${proto}://${host}`;
   }
 
+  previewLine = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const userId = req.supabaseUser?.id;
+      if (!userId) throw new BadRequestError('Utilisateur non identifie', 'customer_required');
+      const result = await this.checkoutService.previewLine(userId, req.body);
+      return res.status(200).json(result);
+    } catch (error) {
+      next(error);
+    }
+  };
+
   /**
    * Post Checkout Preview endpoint (customer)
    */
@@ -41,6 +52,13 @@ export class CheckoutController {
       const idempotencyKey = req.headers['idempotency-key']
         ? String(req.headers['idempotency-key']).trim()
         : null;
+
+      if (!idempotencyKey) {
+        throw new BadRequestError('Idempotency-Key header is required', 'idempotency_key_required');
+      }
+      if (!/^[A-Za-z0-9][A-Za-z0-9._:-]{15,127}$/.test(idempotencyKey)) {
+        throw new BadRequestError('Idempotency-Key header is invalid', 'idempotency_key_invalid');
+      }
 
       const result = await this.checkoutService.processCheckout(userId, req.body, idempotencyKey);
       const statusCode = result.idempotent ? 200 : 201;

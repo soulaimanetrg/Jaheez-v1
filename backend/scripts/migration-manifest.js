@@ -37,6 +37,9 @@ const REQUIRED_MIGRATIONS = Object.freeze([
   '054_customer_otp_demo_mode.sql',
   '055_atomic_promo_and_claim_offer.sql',
   '056_zone_neighbors_and_service_fee.sql',
+  '057_secure_customer_registration_otp.sql',
+  '058_customer_auth_continuation.sql',
+  '059_checkout_request_bound_idempotency.sql',
 ]);
 
 const BASELINE_TABLES = Object.freeze([
@@ -48,6 +51,7 @@ const BASELINE_TABLES = Object.freeze([
 
 const BASELINE_FUNCTIONS = Object.freeze([
   'create_order_atomic',
+  'create_order_atomic_v2',
   'update_order_lifecycle',
 ]);
 

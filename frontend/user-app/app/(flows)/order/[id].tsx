@@ -17,7 +17,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Image } from 'expo-image';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
+import { AppIcon } from '@/components/ui/AppIcon';
 import { BRAND, FONTS, SHADOW_SM } from '../../../constants/brand';
 import { useOrder, orderKeys } from '../../../hooks/queries/useOrders';
 import { useTranslatedText } from '../../../hooks/useTranslatedText';
@@ -87,7 +87,7 @@ function HeaderBtn({ icon, color, onPress }: { icon: any; color?: string; onPres
       ]}
       onPress={onPress}
     >
-      <Ionicons name={icon} size={20} color={color || BRAND.TEXT} />
+      <AppIcon name={icon} size={20} color={color || BRAND.TEXT} />
     </Pressable>
   );
 }
@@ -295,7 +295,7 @@ export default function OrderDetailScreen() {
   if (error || !order) {
     return (
       <View style={[styles.root, styles.centered]}>
-        <Ionicons name="cloud-offline-outline" size={48} color={BRAND.TEXT3} />
+        <AppIcon name="cloud-offline-outline" size={48} color={BRAND.TEXT3} />
         <Text style={styles.errorText}>
           {lang === 'ar' ? 'تعذر تحميل تفاصيل الطلب' : 'Impossible de charger la commande'}
         </Text>
@@ -384,7 +384,7 @@ export default function OrderDetailScreen() {
               <Image source={{ uri: storeCoverUrl }} style={styles.coverImg} contentFit="cover" />
             ) : (
               <View style={styles.coverPlaceholder}>
-                <Ionicons name="storefront-outline" size={36} color={BRAND.TEXT3} />
+                <AppIcon name="storefront-outline" size={36} color={BRAND.TEXT3} />
               </View>
             )}
           </View>
@@ -516,7 +516,7 @@ export default function OrderDetailScreen() {
           {/* Rating Card if applicable */}
           {canRate && (
             <Pressable style={[styles.simpleRateCard, { flexDirection: dirRow(isRTL) }]} onPress={() => setShowRatingModal(true)}>
-              <Ionicons name="star" size={20} color={BRAND.YELLOW_DARK} />
+              <AppIcon name="star" size={20} color={BRAND.YELLOW_DARK} />
               <View style={[styles.rateCardInfo, { alignItems: dirItems(isRTL) }]}>
                 <Text style={styles.rateCardTitle}>{lang === 'ar' ? 'كيف كانت تجربتك؟' : 'Comment était votre expérience ?'}</Text>
                 <Text style={styles.rateCardSub}>{lang === 'ar' ? `قيّم ${storeName} وساعد الآخرين` : `Notez ${storeName} et aidez les autres clients`}</Text>
@@ -526,7 +526,7 @@ export default function OrderDetailScreen() {
 
           {hasRated && (
             <View style={[styles.simpleRateCard, { backgroundColor: '#F0FDF4', flexDirection: dirRow(isRTL) }]}>
-              <Ionicons name="checkmark-circle" size={20} color={BRAND.GREEN} />
+              <AppIcon name="checkmark-circle" size={20} color={BRAND.GREEN} />
               <View style={[styles.rateCardInfo, { alignItems: dirItems(isRTL) }]}>
                 <Text style={[styles.rateCardTitle, { color: '#166534' }]}>{lang === 'ar' ? 'شكراً على تقييمك!' : 'Merci pour votre avis !'}</Text>
                 <Text style={[styles.rateCardSub, { color: '#166534' }]}>{lang === 'ar' ? 'تقييمك يساعد في تحسين الخدمة' : 'Votre avis aide à améliorer le service.'}</Text>
@@ -583,7 +583,7 @@ export default function OrderDetailScreen() {
           <View style={styles.starsRow}>
             {[1, 2, 3, 4, 5].map(s => (
               <Pressable key={s} onPress={() => setUserRating(s)} accessibilityLabel={`${s} نجوم`}>
-                <Ionicons name={s <= userRating ? 'star' : 'star-outline'} size={40} color={s <= userRating ? BRAND.YELLOW_DARK : BRAND.TEXT3} style={{ marginHorizontal: 4 }} />
+                <AppIcon name={s <= userRating ? 'star' : 'star-outline'} size={40} color={s <= userRating ? BRAND.YELLOW_DARK : BRAND.TEXT3} active={s <= userRating} style={{ marginHorizontal: 4 }} />
               </Pressable>
             ))}
           </View>
@@ -703,7 +703,7 @@ export default function OrderDetailScreen() {
                 {lang === 'ar' ? 'تفاصيل المنتج' : lang === 'en' ? 'Product Details' : 'Détails du produit'}
               </Text>
               <Pressable style={styles.sheetDetailClose} onPress={closeDetails}>
-                <Ionicons name="close" size={22} color="#4B5563" />
+                <AppIcon name="close" size={22} color="#4B5563" />
               </Pressable>
             </View>
 
@@ -721,7 +721,7 @@ export default function OrderDetailScreen() {
                       <Image source={{ uri: itemImage }} style={styles.sheetDetailImage} contentFit="cover" />
                     ) : (
                       <View style={[styles.sheetDetailImage, styles.sheetDetailImagePlaceholder]}>
-                        <Ionicons name="restaurant-outline" size={28} color={BRAND.TEXT3} />
+                        <AppIcon name="restaurant-outline" size={28} color={BRAND.TEXT3} />
                       </View>
                     )}
                     <View style={[styles.sheetDetailMeta, { alignItems: dirItems(isRTL) }]}>

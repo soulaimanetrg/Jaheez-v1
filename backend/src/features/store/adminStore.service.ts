@@ -2,6 +2,7 @@ import { supabase } from '../../db/supabase';
 import { AdminStoreRepository } from './adminStore.repository';
 import { BadRequestError, ConflictError } from '../../middleware/error.middleware';
 import { StoreRepository } from './store.repository';
+import { normalizeOptionGroups, OptionConfigurationError } from '../order/optionGroups';
 
 export class AdminStoreService {
   private repo = new AdminStoreRepository();
@@ -58,7 +59,14 @@ export class AdminStoreService {
 
     if (clean.category_id === '') clean.category_id = null;
     if (clean.image_url === '') clean.image_url = null;
-    if (clean.options !== undefined && !Array.isArray(clean.options)) clean.options = [];
+    if (clean.options !== undefined) {
+      try {
+        clean.options = normalizeOptionGroups(clean.options);
+      } catch (error) {
+        const code = error instanceof OptionConfigurationError ? error.errorCode : 'option_configuration_invalid';
+        throw new BadRequestError('Configuration des suppléments invalide.', code);
+      }
+    }
 
     return clean;
   }

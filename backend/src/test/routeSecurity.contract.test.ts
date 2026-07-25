@@ -24,8 +24,18 @@ describe('route security contract', () => {
     expect(hooks).toContain('new Webhook(hookSecret).verify');
     expect(hooks).toContain("req.headers['x-webhook-signature']");
     expect(mobileAuth).not.toContain('WASENDER_SESSION_API_KEY');
+    expect(mobileAuth).not.toContain('RESEND_API_KEY');
     expect(mobileAuth).toContain("'/admin-api/auth/register'");
     expect(mobileAuth).not.toContain('Math.random');
     expect(mobileAuth).not.toContain('verifyOtp(');
+  });
+
+  it('keeps every checkout preview behind customer JWT, limits, and strict schemas', () => {
+    const routes = readFileSync(resolve(root, 'backend/src/features/order/customerOrder.routes.ts'), 'utf8');
+    expect(routes).toContain("'/v1/checkout/line-preview'");
+    expect(routes).toContain('checkoutLinePreviewLimiter');
+    expect(routes).toContain('validate(checkoutLinePreviewSchema)');
+    expect(routes).toContain('checkoutPreviewLimiter');
+    expect(routes).toContain('checkoutCreateLimiter');
   });
 });

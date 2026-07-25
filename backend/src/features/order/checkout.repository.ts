@@ -1,4 +1,5 @@
 import { supabase } from '../../db/supabase';
+import { DatabaseError } from '../../middleware/error.middleware';
 
 const PROMO_OPTIONS_KEY = '__jaheez_product_promo';
 
@@ -47,6 +48,13 @@ export const DRIVER_ORDER_SELECT = `
 `;
 
 export class CheckoutRepository {
+  // ── In-memory cache for rarely-changing settings ───────────────────────────
+  // The service fee is set by admins and changes at most a few times per year.
+  // Caching it for 10 minutes eliminates one DB round-trip from every
+  // previewCheckout call (the biggest inner-loop hot path).
+  private serviceFeeDhCache: { value: number; expiresAt: number } | null = null;
+  private static readonly SERVICE_FEE_TTL_MS = 10 * 60 * 1_000; // 10 minutes
+  // ─────────────────────────────────────────────────────────────────────
   async getOrderForCustomerCancellation(orderId:string) {
     const {data,error}=await supabase.from('orders').select('id,user_id,order_type,driver_id,status').eq('id',orderId).maybeSingle();
     if(error) throw new Error(error.message);
@@ -131,7 +139,7 @@ export class CheckoutRepository {
       .maybeSingle();
 
     if (error) {
-      throw new Error(`Database error looking up store: ${error.message}`);
+      throw new DatabaseError('Store data is unavailable.', 'store_data_unavailable');
     }
     return data ? {
       ...data,
@@ -162,7 +170,7 @@ export class CheckoutRepository {
     }
 
     if (error) {
-      throw new Error(`Database error looking up menu items: ${error.message}`);
+      throw new DatabaseError('Menu data is unavailable.', 'menu_data_unavailable');
     }
     return (data || []).map((row: any) => this.unpackMenuItem(row));
   }
@@ -183,7 +191,7 @@ export class CheckoutRepository {
     }
 
     if (res.error) {
-      console.warn('[checkout repo] Promo code lookup error:', res.error.message);
+      console.warn('[checkout repo] Promo code lookup failed');
       return null;
     }
     return res.data;
@@ -216,7 +224,7 @@ export class CheckoutRepository {
       .eq('promo_id', promoId);
 
     if (error) {
-      console.warn('[checkout repo] Failed to count user promo usages:', error.message);
+      console.warn('[checkout repo] Failed to count user promo usages');
       return 0;
     }
     return count || 0;
@@ -235,7 +243,7 @@ export class CheckoutRepository {
       });
 
     if (error) {
-      console.warn('[checkout repo] Failed to record user promo usage:', error.message);
+      console.warn('[checkout repo] Failed to record user promo usage');
     }
   }
 
@@ -257,9 +265,10 @@ export class CheckoutRepository {
     paymentMethod: string;
     items: any[];
     idempotencyKey: string | null;
+    requestPayload: Record<string, unknown>;
     promoId?: string | null;
   }): Promise<{ order_id: string; created_at: string; is_replay: boolean; cached_response?: any; promo_atomic: boolean }> {
-    const { data, error } = await supabase.rpc('create_order_atomic', {
+    const { data, error } = await supabase.rpc('create_order_atomic_v2', {
       p_user_id: params.userId,
       p_store_id: params.storeId,
       p_delivery_address: params.deliveryAddress,
@@ -274,23 +283,25 @@ export class CheckoutRepository {
       p_payment_method: params.paymentMethod,
       p_items: params.items,
       p_idempotency_key: params.idempotencyKey,
+      p_request_payload: params.requestPayload,
       p_promo_id: params.promoId ?? null,
     });
 
-    // Before migration 055 the RPC has no p_promo_id parameter; retry with the
-    // legacy signature so deploys are order-independent. The caller falls back
-    // to post-commit promo accounting when promoAtomic is false.
-    if (error && /p_promo_id|function .*create_order_atomic.* does not exist/i.test(error.message)) {
-      return this.createAtomicOrderLegacy(params);
-    }
-
     if (error) {
-      throw new Error(`Database transaction failed to create order: ${error.message}`);
+      const marker = [
+        'idempotency_key_owner_mismatch',
+        'idempotency_payload_mismatch',
+        'promo_exhausted',
+        'promo_user_exhausted',
+        'promo_invalid',
+      ].find((candidate) => error.message.includes(candidate));
+      if (marker) throw new Error(marker);
+      throw new DatabaseError('Checkout transaction failed.', 'checkout_transaction_failed');
     }
 
     const row = Array.isArray(data) ? data[0] : data;
     if (!row || !row.order_id) {
-      throw new Error('Database transaction failed — did not return order_id.');
+      throw new DatabaseError('Checkout transaction failed.', 'checkout_transaction_failed');
     }
 
     return {
@@ -345,7 +356,7 @@ export class CheckoutRepository {
 
     const row = Array.isArray(data) ? data[0] : data;
     if (!row || !row.order_id) {
-      throw new Error('Database transaction failed — did not return order_id.');
+      throw new DatabaseError('Checkout transaction failed.', 'checkout_transaction_failed');
     }
 
     return {
@@ -447,21 +458,37 @@ export class CheckoutRepository {
    * Operator-configurable checkout service fee (migration 056). Falls back
    * to the historical 2 DH when unset or unreadable — never fails checkout
    * over a missing setting, and clamps to a sane non-negative bound.
+   * Result is cached in-process for 10 minutes to avoid a DB round-trip on
+   * every previewCheckout call.
    */
   async getServiceFeeDh(): Promise<number> {
     const FALLBACK_DH = 2;
     const MAX_DH = 50;
+
+    // Return cached value if still fresh
+    const now = Date.now();
+    if (this.serviceFeeDhCache && this.serviceFeeDhCache.expiresAt > now) {
+      return this.serviceFeeDhCache.value;
+    }
+
     try {
       const { data, error } = await supabase
         .from('app_settings')
         .select('value')
         .eq('key', 'checkout_service_fee_centimes')
         .maybeSingle();
-      if (error || !data) return FALLBACK_DH;
+      if (error || !data) {
+        this.serviceFeeDhCache = { value: FALLBACK_DH, expiresAt: now + CheckoutRepository.SERVICE_FEE_TTL_MS };
+        return FALLBACK_DH;
+      }
       const centimes = Number(data.value);
-      if (!Number.isFinite(centimes) || centimes < 0) return FALLBACK_DH;
-      return Math.min(centimes / 100, MAX_DH);
+      const result = (!Number.isFinite(centimes) || centimes < 0)
+        ? FALLBACK_DH
+        : Math.min(centimes / 100, MAX_DH);
+      this.serviceFeeDhCache = { value: result, expiresAt: now + CheckoutRepository.SERVICE_FEE_TTL_MS };
+      return result;
     } catch {
+      this.serviceFeeDhCache = { value: FALLBACK_DH, expiresAt: now + CheckoutRepository.SERVICE_FEE_TTL_MS };
       return FALLBACK_DH;
     }
   }

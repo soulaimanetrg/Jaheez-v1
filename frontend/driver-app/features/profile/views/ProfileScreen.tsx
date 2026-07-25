@@ -1,3 +1,4 @@
+import { AppIcon } from '@/components/ui/AppIcon';
 import { useEffect, useState, useCallback } from 'react';
 import { View, Text, Pressable, ScrollView, RefreshControl, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
@@ -85,7 +86,7 @@ export function ProfileScreen() {
           <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', gap: 14 }}>
             <View style={styles.balanceCol}>
               <View style={[styles.iconWrap, { backgroundColor: BRAND.YELLOW_LIGHT }]}> 
-                <DollarSign size={20} color={BRAND.YELLOW_DARK} />
+                <AppIcon icon={DollarSign} size={20} color={BRAND.YELLOW_DARK} />
               </View>
               <Text style={styles.balanceLabel}>{isRTL ? 'دفعات الشيفت' : 'Payouts de shifts'}</Text>
               <Text style={[styles.balanceVal, { color: BRAND.YELLOW_DARK }]}>{isRTL ? 'بعد الإغلاق' : 'Apres cloture'}</Text>
@@ -93,7 +94,7 @@ export function ProfileScreen() {
             <View style={styles.balanceDivider} />
             <View style={styles.balanceCol}>
               <View style={[styles.iconWrap, { backgroundColor: BRAND.RED_LIGHT }]}>
-                <CreditCard size={20} color={BRAND.RED} />
+                <AppIcon icon={CreditCard} size={20} color={BRAND.RED} />
               </View>
               <Text style={styles.balanceLabel}>{t.codBalance || 'Espèces collectées'}</Text>
               <Text style={[styles.balanceVal, { color: BRAND.RED }]}>{codDH} DH</Text>
@@ -110,7 +111,7 @@ export function ProfileScreen() {
         </Text>
         <View style={[styles.card, SHADOW]}>
           <View style={[styles.infoRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-            <User size={18} color={BRAND.TEXT3} />
+            <AppIcon icon={User} size={18} color={BRAND.TEXT3} />
             <View style={[styles.infoText, { alignItems: isRTL ? 'flex-end' : 'flex-start' }]}>
               <Text style={styles.infoLabel}>{t.fullName || 'Nom complet'}</Text>
               <Text style={styles.infoVal}>{driver.full_name}</Text>
@@ -118,7 +119,7 @@ export function ProfileScreen() {
           </View>
           <View style={styles.rowDivider} />
           <View style={[styles.infoRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-            <ShieldCheck size={18} color={BRAND.TEXT3} />
+            <AppIcon icon={ShieldCheck} size={18} color={BRAND.TEXT3} />
             <View style={[styles.infoText, { alignItems: isRTL ? 'flex-end' : 'flex-start' }]}>
               <Text style={styles.infoLabel}>{isRTL ? 'رقم البطاقة الوطنية' : 'CIN / Identifiant'}</Text>
               <Text style={styles.infoVal}>{driver.cin || '—'}</Text>
@@ -126,7 +127,7 @@ export function ProfileScreen() {
           </View>
           <View style={styles.rowDivider} />
           <View style={[styles.infoRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-            <ShieldCheck size={18} color={BRAND.TEXT3} />
+            <AppIcon icon={ShieldCheck} size={18} color={BRAND.TEXT3} />
             <View style={[styles.infoText, { alignItems: isRTL ? 'flex-end' : 'flex-start' }]}>
               <Text style={styles.infoLabel}>{isRTL ? 'حالة الحساب' : 'Statut du compte'}</Text>
               <Text style={[styles.infoVal, { color: driver.is_active !== false ? BRAND.GREEN : BRAND.ERROR, fontFamily: FONTS.SEMIBOLD }]}>
@@ -142,7 +143,7 @@ export function ProfileScreen() {
         </Text>
         <View style={[styles.card, SHADOW]}>
           <View style={[styles.infoRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-            <Car size={18} color={BRAND.TEXT3} />
+            <AppIcon icon={Car} size={18} color={BRAND.TEXT3} />
             <View style={[styles.infoText, { alignItems: isRTL ? 'flex-end' : 'flex-start' }]}>
               <Text style={styles.infoLabel}>{t.vehicleType || 'Type de véhicule'}</Text>
               <Text style={styles.infoVal}>{getVehicleLabel(driver.vehicle_type)}</Text>
@@ -152,7 +153,7 @@ export function ProfileScreen() {
             <>
               <View style={styles.rowDivider} />
               <View style={[styles.infoRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-                <Car size={18} color={BRAND.TEXT3} />
+                <AppIcon icon={Car} size={18} color={BRAND.TEXT3} />
                 <View style={[styles.infoText, { alignItems: isRTL ? 'flex-end' : 'flex-start' }]}>
                   <Text style={styles.infoLabel}>{isRTL ? 'رقم اللوحة' : 'Numéro de plaque'}</Text>
                   <Text style={styles.infoVal}>{driver.vehicle_plate}</Text>
@@ -168,7 +169,7 @@ export function ProfileScreen() {
           onPress={() => router.push('/(flows)/change-password')}
           style={[styles.card, styles.changePwBtn, { flexDirection: isRTL ? 'row-reverse' : 'row' }, SHADOW]}
         >
-          <Lock size={18} color={BRAND.TEXT2} />
+          <AppIcon icon={Lock} size={18} color={BRAND.TEXT2} />
           <Text style={styles.changePwText}>{t.changePassword || 'Modifier le mot de passe'}</Text>
         </Pressable>
 
@@ -183,7 +184,7 @@ export function ProfileScreen() {
               onPress={() => setLang(l)}
               style={[styles.langChip, lang === l && styles.langChipActive]}
             >
-              <Languages size={14} color={lang === l ? '#fff' : BRAND.TEXT3} />
+              <AppIcon icon={Languages} size={14} color={lang === l ? '#fff' : BRAND.TEXT3} active={lang === l} />
               <Text style={[styles.langChipText, lang === l && { color: '#fff', fontFamily: FONTS.SEMIBOLD }]}>
                 {l === 'ar' ? 'العربية' : l === 'fr' ? 'Français' : 'English'}
               </Text>
@@ -193,7 +194,7 @@ export function ProfileScreen() {
 
         {/* Logout */}
         <Pressable onPress={doLogout} style={[styles.logoutBtn, SHADOW]}>
-          <LogOut size={16} color={BRAND.ERROR} />
+          <AppIcon icon={LogOut} size={16} color={BRAND.ERROR} />
           <Text style={{ color: BRAND.ERROR, fontFamily: FONTS.SEMIBOLD, fontSize: 14 }}>{t.logout || 'Déconnexion'}</Text>
         </Pressable>
       </ScrollView>

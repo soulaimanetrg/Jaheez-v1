@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, Pressable, StyleSheet, ViewStyle } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
+import { AppIcon } from '@/components/ui/AppIcon';
 import { BRAND, FONTS, SIZE, SPACE } from '../../constants/brand';
 
 interface TopNavProps {
@@ -49,7 +49,7 @@ export function TopNav({
                 accessibilityLabel="رجوع"
                 accessibilityRole="button"
               >
-                <Ionicons name="arrow-back" size={24} color={textColor} />
+                <AppIcon name="arrow-back" size={24} color={textColor} />
               </Pressable>
             ) : null
           )}

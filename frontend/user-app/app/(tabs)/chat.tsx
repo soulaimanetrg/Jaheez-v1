@@ -5,7 +5,7 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Ionicons } from '@/components/ui/Ionicons';
+import { AppIcon } from '@/components/ui/AppIcon';
 import { BRAND, FONTS, SHADOW, SHADOW_SM, SHADOW_LG } from '../../constants/brand';
 import { ASSETS } from '../../constants/assets';
 import { useSupportTickets } from '../../hooks/queries/useSupportTickets';
@@ -82,7 +82,7 @@ export default function ChatScreen() {
             onPress={() => router.canGoBack() ? router.back() : router.replace('/(tabs)')}
             accessibilityLabel="رجوع"
           >
-            <Ionicons name="arrow-back" size={20} color={BRAND.TEXT} />
+            <AppIcon name="arrow-back" size={20} color={BRAND.TEXT} />
           </Pressable>
         </View>
 
@@ -108,11 +108,11 @@ export default function ChatScreen() {
             accessibilityLabel="تواصل عبر واتساب"
           >
             <View style={styles.recommendedBadge}>
-              <Ionicons name="star" size={9} color="#FFF" />
+              <AppIcon name="star" size={9} color="#FFF" />
               <Text style={styles.recommendedText}>موصى به</Text>
             </View>
             <View style={styles.contactIconCircle}>
-              <Ionicons name="logo-whatsapp" size={24} color={BRAND.WHATSAPP} />
+              <AppIcon name="logo-whatsapp" size={24} color={BRAND.WHATSAPP} />
             </View>
             <Text style={styles.contactTitle}>واتساب</Text>
             <Text style={styles.contactSub}>أسرع طريقة للمساعدة{'\n'}الفورية</Text>
@@ -124,7 +124,7 @@ export default function ChatScreen() {
             accessibilityLabel="اتصل بنا"
           >
             <View style={[styles.contactIconCircle, { backgroundColor: BRAND.RED_LIGHT }]}>
-              <Ionicons name="call-outline" size={24} color={BRAND.RED} />
+              <AppIcon name="call-outline" size={24} color={BRAND.RED} />
             </View>
             <Text style={styles.contactTitle}>اتصل بنا</Text>
             <Text style={styles.contactSub}>تحدث مباشرة مع{'\n'}فريق الدعم</Text>
@@ -144,7 +144,7 @@ export default function ChatScreen() {
               accessibilityLabel={action.title}
             >
               <View style={[styles.quickActionIcon, { backgroundColor: action.iconBg }]}>
-                <Ionicons name={action.icon as any} size={22} color={action.iconColor} />
+                <AppIcon name={action.icon} size={22} color={action.iconColor} />
               </View>
               <Text style={styles.quickActionTitle}>{action.title}</Text>
               <Text style={styles.quickActionSub}>{action.sub}</Text>
@@ -155,7 +155,7 @@ export default function ChatScreen() {
         {/* ── RECENT TICKETS ── */}
         <View style={styles.recentHeader}>
           <View style={styles.recentHeaderRight}>
-            <Ionicons name="chatbubbles-outline" size={20} color={BRAND.TEXT} />
+            <AppIcon name="chatbubbles-outline" size={20} color={BRAND.TEXT} />
             <Text style={styles.recentTitle}>تذاكر الدعم</Text>
           </View>
         </View>
@@ -180,7 +180,7 @@ export default function ChatScreen() {
           return (
             <View key={ticket.id} style={styles.chatCard}>
               <View style={[styles.chatIcon, { backgroundColor: `${urg.color}18` }]}>
-                <Ionicons name={urg.icon as any} size={20} color={urg.color} />
+                <AppIcon name={urg.icon} size={20} color={urg.color} />
               </View>
               <View style={styles.chatInfoCol}>
                 <View style={styles.chatTopRow}>
@@ -194,7 +194,7 @@ export default function ChatScreen() {
                   <Text style={styles.chatOrderId}>{ticket.ref_number}</Text>
                 </View>
               </View>
-              <Ionicons name="chevron-back" size={17} color={BRAND.TEXT3} />
+              <AppIcon name="chevron-back" size={17} color={BRAND.TEXT3} />
             </View>
           );
         })}
@@ -210,12 +210,12 @@ export default function ChatScreen() {
           accessibilityLabel="بدء محادثة واتساب"
         >
           <View style={styles.fastBadge}>
-            <Ionicons name="flash" size={11} color="#FFF" />
+            <AppIcon name="flash" size={11} color="#FFF" />
             <Text style={styles.fastBadgeText}>الأسرع</Text>
           </View>
           <View style={styles.whatsappBtnContent}>
             <Text style={styles.whatsappBtnText}>بدء محادثة واتساب</Text>
-            <Ionicons name="logo-whatsapp" size={22} color="#FFF" />
+            <AppIcon name="logo-whatsapp" size={22} color="#FFF" />
           </View>
         </Pressable>
       </View>

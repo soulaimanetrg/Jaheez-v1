@@ -22,6 +22,11 @@ const gates = [
     command: 'npm run build',
   },
   {
+    name: 'Customer app cart/UI tests',
+    cwd: path.join(root, 'frontend', 'user-app'),
+    command: 'npm run test:ci',
+  },
+  {
     name: 'Customer app TypeScript check',
     cwd: path.join(root, 'frontend', 'user-app'),
     command: 'npx tsc --noEmit',

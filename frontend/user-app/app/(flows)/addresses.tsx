@@ -17,7 +17,7 @@ import {
 import { useRouter } from 'expo-router';
 import * as Location from 'expo-location';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Ionicons } from '@/components/ui/Ionicons';
+import { AppIcon } from '@/components/ui/AppIcon';
 import { BRAND, FONTS } from '../../constants/brand';
 import { useAuthStore } from '../../store/authStore';
 import { useLangStore } from '../../store/languageStore';
@@ -410,7 +410,7 @@ export default function AddressesScreen() {
           accessibilityRole="button"
           accessibilityLabel={t.cancel}
         >
-          <Ionicons name={backArrow(isRTL)} size={22} color={BRAND.TEXT} />
+          <AppIcon name={backArrow(isRTL)} size={22} color={BRAND.TEXT} />
         </Pressable>
 
         <View style={styles.fixedHeaderCenter}>
@@ -420,7 +420,7 @@ export default function AddressesScreen() {
         </View>
 
         <Pressable style={styles.fixedHeaderBtn} onPress={openAdd} accessibilityRole="button" accessibilityLabel={t.addAddress}>
-          <Ionicons name="add" size={22} color={BRAND.TEXT} />
+          <AppIcon name="add" size={22} color={BRAND.TEXT} />
         </Pressable>
       </View>
 
@@ -461,7 +461,7 @@ export default function AddressesScreen() {
         ) : addresses.length === 0 ? (
           <View style={styles.emptyState}>
             <View style={styles.emptyIllustration}>
-              <Ionicons name="location-outline" size={56} color={BRAND.RED} />
+              <AppIcon name="location-outline" size={56} color={BRAND.RED} />
             </View>
             <Text style={[styles.emptyTitle, { textAlign: dirText(isRTL) }]}>{t.emptyTitle}</Text>
             <Text style={[styles.emptySub, { textAlign: dirText(isRTL) }]}>{t.emptySub}</Text>
@@ -474,7 +474,7 @@ export default function AddressesScreen() {
             {addresses.map((item) => (
               <View key={item.id} style={[styles.addressRow, { flexDirection: dirRow(isRTL) }]}>
                 <View style={[styles.addressIcon, item.is_default && styles.addressIconDefault]}>
-                  <Ionicons
+                  <AppIcon
                     name={item.is_default ? 'navigate' : 'location-outline'}
                     size={22}
                     color={item.is_default ? BRAND.RED : BRAND.TEXT3}
@@ -506,10 +506,10 @@ export default function AddressesScreen() {
 
                 <View style={styles.rowActions}>
                   <Pressable style={styles.rowActionButton} onPress={() => openEdit(item)} accessibilityRole="button" accessibilityLabel={t.editAddress}>
-                    <Ionicons name="create-outline" size={18} color={BRAND.TEXT2} />
+                    <AppIcon name="create-outline" size={18} color={BRAND.TEXT2} />
                   </Pressable>
                   <Pressable style={styles.rowActionButton} onPress={() => handleDelete(item.id)} accessibilityRole="button" accessibilityLabel={t.delete}>
-                    <Ionicons name="trash-outline" size={18} color={BRAND.ERROR} />
+                    <AppIcon name="trash-outline" size={18} color={BRAND.ERROR} />
                   </Pressable>
                 </View>
               </View>
@@ -520,12 +520,12 @@ export default function AddressesScreen() {
         {!loadingAddresses && addresses.length > 0 && (
           <>
             <Pressable style={[styles.secondaryAddButton, { flexDirection: dirRow(isRTL) }]} onPress={openAdd} accessibilityRole="button" accessibilityLabel={t.addAddress}>
-              <Ionicons name="add-circle-outline" size={20} color={BRAND.RED} />
+              <AppIcon name="add-circle-outline" size={20} color={BRAND.RED} />
               <Text style={styles.secondaryAddText}>{t.addAddress}</Text>
             </Pressable>
 
             <View style={[styles.tipCard, { flexDirection: dirRow(isRTL) }]}>
-              <Ionicons name="information-circle-outline" size={19} color={BRAND.TEXT3} />
+              <AppIcon name="information-circle-outline" size={19} color={BRAND.TEXT3} />
               <Text style={[styles.tipText, { textAlign: dirText(isRTL) }]}>{t.tip}</Text>
             </View>
           </>
@@ -575,7 +575,7 @@ export default function AddressesScreen() {
                     accessibilityRole="button"
                     accessibilityLabel={preset.label}
                   >
-                    <Ionicons name={preset.icon} size={16} color={active ? BRAND.SURFACE : BRAND.TEXT3} />
+                    <AppIcon name={preset.icon} size={16} color={active ? BRAND.SURFACE : BRAND.TEXT3} active={active} />
                     <Text style={[styles.presetText, active && styles.presetTextActive]}>{preset.label}</Text>
                   </Pressable>
                 );
@@ -601,7 +601,7 @@ export default function AddressesScreen() {
               {locating ? (
                 <ActivityIndicator size="small" color={BRAND.RED} />
               ) : (
-                <Ionicons name="navigate-outline" size={18} color={BRAND.RED} />
+                <AppIcon name="navigate-outline" size={18} color={BRAND.RED} />
               )}
               <Text style={styles.locationButtonText}>
                 {locating ? t.locating : t.useCurrentLocation}
@@ -631,7 +631,7 @@ export default function AddressesScreen() {
               accessibilityLabel={t.makeDefault}
             >
               <View style={[styles.checkbox, formDefault && styles.checkboxActive]}>
-                {formDefault && <Ionicons name="checkmark" size={14} color={BRAND.SURFACE} />}
+                {formDefault && <AppIcon name="checkmark" size={14} color={BRAND.SURFACE} />}
               </View>
               <Text style={[styles.defaultToggleText, { textAlign: dirText(isRTL) }]}>{t.makeDefault}</Text>
             </Pressable>

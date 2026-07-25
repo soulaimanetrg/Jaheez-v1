@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Ionicons } from '@/components/ui/Ionicons';
+import { AppIcon } from '@/components/ui/AppIcon';
 import { BRAND, FONTS, SHADOW_SM } from '../../constants/brand';
 
 export default function PaymentSuccessScreen() {
@@ -12,13 +12,13 @@ export default function PaymentSuccessScreen() {
   return (
     <View style={[styles.root, { paddingTop: insets.top + 60 }]}>
       <View style={styles.iconWrap}>
-        <Ionicons name="pause-circle" size={56} color={BRAND.RED} />
+        <AppIcon name="pause-circle" size={56} color={BRAND.RED} />
       </View>
       <Text style={styles.title}>الدفع الإلكتروني متوقف مؤقتًا</Text>
       <Text style={styles.sub}>
         نعمل على مزود دفع مناسب للسوق المغربي. حاليًا يمكنك إتمام الطلب بالدفع نقدًا عند الاستلام.
       </Text>
-      <Pressable style={styles.btn} onPress={() => router.replace('/(flows)/cart' as any)}>
+      <Pressable style={styles.btn} onPress={() => router.replace('/(tabs)/cart' as any)}>
         <Text style={styles.btnTxt}>العودة إلى السلة</Text>
       </Pressable>
     </View>

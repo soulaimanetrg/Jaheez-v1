@@ -39,6 +39,8 @@ export const BRAND = {
   BLUE:    '#3A8FE8',
   WARN:    '#F5A623',
   ERROR:   '#DC2626',
+  DISABLED: '#D1D5DB',
+  OVERLAY: 'rgba(0, 0, 0, 0.4)',
 
   // ── WhatsApp
   WHATSAPP: '#25D366',

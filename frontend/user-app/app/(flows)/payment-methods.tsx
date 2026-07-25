@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, Animated, Pressable, ScrollView } from 'react-n
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Ionicons } from '@/components/ui/Ionicons';
+import { AppIcon } from '@/components/ui/AppIcon';
 import { BRAND, FONTS, SHADOW_SM } from '../../constants/brand';
 import { useLangStore } from '../../store/languageStore';
 import { dirRow } from '../../lib/direction';
@@ -58,7 +58,7 @@ export default function PaymentMethodsScreen() {
               style={styles.backBtn}
               onPress={() => (router.canGoBack() ? router.back() : router.replace('/(tabs)/profile'))}
             >
-              <Ionicons name="arrow-back" size={20} color="#FFF" />
+              <AppIcon name="arrow-back" size={20} color="#FFF" />
             </Pressable>
           </Animated.View>
           <Animated.View style={{ ...StyleSheet.absoluteFillObject, opacity: buttonFadeIn }}>
@@ -66,7 +66,7 @@ export default function PaymentMethodsScreen() {
               style={styles.fixedHeaderBtnDark}
               onPress={() => (router.canGoBack() ? router.back() : router.replace('/(tabs)/profile'))}
             >
-              <Ionicons name="arrow-back" size={20} color="#171717" />
+              <AppIcon name="arrow-back" size={20} color="#171717" />
             </Pressable>
           </Animated.View>
         </View>
@@ -101,7 +101,7 @@ export default function PaymentMethodsScreen() {
         >
           <View style={styles.heroRow}>
             <View style={styles.heroBadge}>
-              <Ionicons name="pause-circle-outline" size={14} color="rgba(255,255,255,0.85)" />
+              <AppIcon name="pause-circle-outline" size={14} color="rgba(255,255,255,0.85)" />
               <Text style={styles.heroBadgeTxt}>الدفع الإلكتروني متوقف مؤقتًا</Text>
             </View>
             {/* Empty space placeholder for aligned row */}
@@ -112,7 +112,7 @@ export default function PaymentMethodsScreen() {
 
         <View style={styles.noticeCard}>
           <View style={styles.noticeIcon}>
-            <Ionicons name="card-outline" size={28} color={BRAND.RED} />
+            <AppIcon name="card-outline" size={28} color={BRAND.RED} />
           </View>
           <Text style={styles.noticeTitle}>البطاقات البنكية غير متاحة الآن</Text>
           <Text style={styles.noticeText}>
@@ -124,7 +124,7 @@ export default function PaymentMethodsScreen() {
         <View style={styles.optionCard}>
           <View style={styles.optionRow}>
             <View style={styles.enabledBadge}>
-              <Ionicons name="checkmark-circle" size={18} color="#FFF" />
+              <AppIcon name="checkmark-circle" size={18} color="#FFF" />
               <Text style={styles.enabledText}>مفعل</Text>
             </View>
             <View style={styles.optionInfo}>
@@ -132,7 +132,7 @@ export default function PaymentMethodsScreen() {
               <Text style={styles.optionSub}>ادفع للسائق نقدًا عند وصول الطلب.</Text>
             </View>
             <View style={styles.optionIcon}>
-              <Ionicons name="cash-outline" size={24} color={BRAND.GREEN} />
+              <AppIcon name="cash-outline" size={24} color={BRAND.GREEN} />
             </View>
           </View>
         </View>

@@ -40,3 +40,7 @@ export class DatabaseError extends HttpError {
 export class GoneError extends HttpError {
   statusCode = 410;
 }
+
+export class TooManyRequestsError extends HttpError {
+  statusCode = 429;
+}

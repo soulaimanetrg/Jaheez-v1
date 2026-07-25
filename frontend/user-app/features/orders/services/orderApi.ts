@@ -1,13 +1,16 @@
-import { backendJson } from '@/lib/backendApi';
+import { BackendApiError, backendJson } from '@/lib/backendApi';
 import { adminApiUrl } from '@/lib/adminApi';
 import { usePlatformStore } from '@/store/platformStore';
 import { useLangStore } from '@/store/languageStore';
+import { generateSecureUUID } from '@/lib/uuid';
 import { io, Socket } from 'socket.io-client';
 import type {
   ApiResponse,
   ChatMessage,
   CheckoutOrderInput,
   CheckoutOrderResult,
+  CheckoutLinePreview,
+  CheckoutLinePreviewInput,
   CheckoutPreviewInput,
   CheckoutQuote,
   Order,
@@ -24,23 +27,7 @@ function maintenanceBlock(): string | null {
 }
 
 function makeIdempotencyKey(): string {
-  try {
-    const randomUuid = globalThis.crypto?.randomUUID?.();
-    if (randomUuid) return `checkout:${randomUuid}`;
-    if (globalThis.crypto?.getRandomValues) {
-      const randomValues = new Uint8Array(16);
-      globalThis.crypto.getRandomValues(randomValues);
-      const randomHex = Array.from(randomValues, (value) => value.toString(16).padStart(2, '0')).join('');
-      if (randomHex.replace(/0/g, '').length > 0) return `checkout:${randomHex}`;
-    }
-  } catch {
-    // Ignore and fall through to Math.random fallback
-  }
-
-  // Fallback for React Native / Expo environment
-  const timestamp = Date.now().toString(36);
-  const randomPart = Math.floor(Math.random() * 1e15).toString(36);
-  return `checkout:${timestamp}:${randomPart}`;
+  return `checkout:${generateSecureUUID()}`;
 }
 
 function normalizeCheckoutItems(items: CheckoutPreviewInput['items']) {
@@ -50,9 +37,41 @@ function normalizeCheckoutItems(items: CheckoutPreviewInput['items']) {
     options: (item.options || []).map((option) => ({
       option_id: option.option_id,
       choice_id: option.choice_id,
-      choice_name: option.choice_name || undefined,
     })),
   }));
+}
+
+export function checkoutLineSignature(item: CheckoutLinePreviewInput['item']): string {
+  const options = (item.options || [])
+    .map((option) => `${option.option_id}:${option.choice_id}`)
+    .sort();
+  return `${item.menu_item_id}|${item.quantity}|${options.join('|')}`;
+}
+
+export async function previewCheckoutLine(
+  input: CheckoutLinePreviewInput,
+  signal?: AbortSignal,
+): Promise<ApiResponse<CheckoutLinePreview>> {
+  try {
+    const blocked = maintenanceBlock();
+    if (blocked) return { data: null, error: blocked };
+    const data = await backendJson<CheckoutLinePreview>('/admin-api/v1/checkout/line-preview', {
+      method: 'POST',
+      signal,
+      body: JSON.stringify({
+        store_id: input.store_id,
+        item: normalizeCheckoutItems([input.item])[0],
+      }),
+    });
+    return { data, error: null };
+  } catch (error: unknown) {
+    if (error instanceof Error && error.name === 'AbortError') throw error;
+    return {
+      data: null,
+      error: error instanceof Error ? error.message : 'Failed to preview product',
+      error_code: error instanceof BackendApiError ? error.code : 'checkout_line_preview_failed',
+    };
+  }
 }
 
 export async function getActiveOrder(userId: string): Promise<ApiResponse<Order>> {
@@ -96,13 +115,14 @@ export async function getUserOrders(userId: string): Promise<ApiResponse<Order[]
   }
 }
 
-export async function previewCheckout(input: CheckoutPreviewInput): Promise<ApiResponse<CheckoutQuote>> {
+export async function previewCheckout(input: CheckoutPreviewInput, signal?: AbortSignal): Promise<ApiResponse<CheckoutQuote>> {
   try {
     const blocked = maintenanceBlock();
     if (blocked) return { data: null, error: blocked };
 
     const data = await backendJson<CheckoutQuote>('/admin-api/v1/checkout/preview', {
       method: 'POST',
+      signal,
       body: JSON.stringify({
         store_id: input.store_id,
         payment_method: input.payment_method ?? 'cash',
@@ -114,25 +134,52 @@ export async function previewCheckout(input: CheckoutPreviewInput): Promise<ApiR
 
     return { data, error: null };
   } catch (error: unknown) {
-    return { data: null, error: error instanceof Error ? error.message : 'Failed to preview checkout' };
+    if (error instanceof Error && error.name === 'AbortError') throw error;
+    return {
+      data: null,
+      error: error instanceof Error ? error.message : 'Failed to preview checkout',
+      error_code: error instanceof BackendApiError ? error.code : 'checkout_preview_failed',
+    };
   }
 }
 
 // One idempotency key per submission chain, not per request: a network
 // timeout followed by a retap must replay the same order on the server,
 // not create a second one. Cleared only on a definitive server response.
-let pendingCheckoutKey: string | null = null;
+let pendingCheckout: { key: string; requestSignature: string } | null = null;
+
+function checkoutRequestSignature(order: CheckoutOrderInput): string {
+  return JSON.stringify({
+    store_id: order.store_id,
+    delivery_address: order.delivery_address.trim(),
+    delivery_lat: order.delivery_lat ?? null,
+    delivery_lng: order.delivery_lng ?? null,
+    notes: order.notes ?? null,
+    promo_code: order.promo_code?.trim().toUpperCase() || null,
+    rider_tip: order.rider_tip ?? 0,
+    items: normalizeCheckoutItems(order.items)
+      .map((item) => ({
+        ...item,
+        options: (item.options || []).slice().sort((a, b) =>
+          `${a.option_id}:${a.choice_id}`.localeCompare(`${b.option_id}:${b.choice_id}`)),
+      }))
+      .sort((a, b) => `${a.menu_item_id}:${JSON.stringify(a.options)}`.localeCompare(`${b.menu_item_id}:${JSON.stringify(b.options)}`)),
+  });
+}
 
 export async function createOrder(order: CheckoutOrderInput): Promise<ApiResponse<CheckoutOrderResult>> {
   try {
     const blocked = maintenanceBlock();
     if (blocked) return { data: null, error: blocked };
 
-    if (!pendingCheckoutKey) pendingCheckoutKey = makeIdempotencyKey();
+    const requestSignature = checkoutRequestSignature(order);
+    if (!pendingCheckout || pendingCheckout.requestSignature !== requestSignature) {
+      pendingCheckout = { key: makeIdempotencyKey(), requestSignature };
+    }
 
     const data = await backendJson<CheckoutOrderResult>('/admin-api/v1/checkout', {
       method: 'POST',
-      headers: { 'Idempotency-Key': pendingCheckoutKey },
+      headers: { 'Idempotency-Key': pendingCheckout.key },
       body: JSON.stringify({
         store_id: order.store_id,
         delivery_address: order.delivery_address,
@@ -147,14 +194,14 @@ export async function createOrder(order: CheckoutOrderInput): Promise<ApiRespons
     });
 
     // Definitive success — the next checkout is a new order.
-    pendingCheckoutKey = null;
+    pendingCheckout = null;
     return { data: { id: data.order_id, ...data }, error: null };
   } catch (error: unknown) {
     // Definitive server rejections (4xx validation) also end the chain;
     // keep the key only for ambiguous network-level failures where the
     // order may or may not have been created.
     if (error instanceof Error && !/network|timeout|joindre|fetch/i.test(error.message)) {
-      pendingCheckoutKey = null;
+      pendingCheckout = null;
     }
     return { data: null, error: error instanceof Error ? error.message : 'Failed to create order' };
   }

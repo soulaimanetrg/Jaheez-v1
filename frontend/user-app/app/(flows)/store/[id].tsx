@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -25,15 +25,19 @@ import { BRAND, FONTS, SHADOW_SM } from '../../../constants/brand';
 import { ASSETS } from '../../../constants/assets';
 import { formatDh } from '../../../lib/money';
 import {
-  getStoreById, getStoreMenu, toggleFavorite,
-  toggleFavoriteProduct, checkFavoriteProduct
+  toggleFavorite, checkFavorite,
+  toggleFavoriteProduct, checkFavoriteProduct,
 } from '../../../lib/storeApi';
+import { useStore as useStoreQuery, useStoreMenu as useStoreMenuQuery } from '../../../hooks/queries/useStores';
 import { adminApiUrl, resolveStoreImageUrl } from '../../../lib/adminApi';
+
 import { isStoreCurrentlyOpen } from '../../../lib/storeStatus';
 import { useAuthStore } from '../../../store/authStore';
 import { useCartStore } from '../../../store/cartStore';
 import { useLangStore } from '../../../store/languageStore';
 import { dirItems, dirRow, dirRowReverse, dirText, backArrow } from '../../../lib/direction';
+import { normalizeMobileOptionGroups } from '@/features/orders/optionGroups';
+import { restoreProductSelections, selectProductChoice, productSelectionsAreValid, type ProductSelections } from '@/features/orders/productLineEditor';
 
 /* ── Layout helpers (Density-independent pixels) ─────────── */
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
@@ -281,9 +285,193 @@ const ProductRow = React.memo(
   }
 );
 
-/* ── Product Detail Sheet ───────────────────────────────────── */
+/* ══════════════════════════════════════════════════════
+   STORE SKELETON — pixel-perfect shimmer, no spinner
+   ══════════════════════════════════════════════════════ */
+function StoreSkeletonScreen() {
+  const insets = useSafeAreaInsets();
+  const shimmer = useRef(new Animated.Value(0)).current;
 
-/* ── Product Detail Sheet ───────────────────────────────────── */
+  useEffect(() => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(shimmer, {
+          toValue: 1,
+          duration: 900,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+        Animated.timing(shimmer, {
+          toValue: 0,
+          duration: 900,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+      ]),
+    ).start();
+  }, [shimmer]);
+
+  const shimmerOpacity = shimmer.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0.45, 1],
+  });
+
+  const Block = useCallback(({ w, h, radius = 10, style }: { w: number | string; h: number; radius?: number; style?: object }) => (
+    <Animated.View
+      style={[
+        {
+          width: w as number,
+          height: h,
+          borderRadius: radius,
+          backgroundColor: BRAND.BORDER,
+          opacity: shimmerOpacity,
+        },
+        style,
+      ]}
+    />
+  ), [shimmerOpacity]);
+
+  return (
+    <View style={[sk.root, { paddingTop: 0 }]}>
+      {/* ── Hero image block ── */}
+      <Animated.View style={[sk.hero, { opacity: shimmerOpacity }]} />
+
+      {/* ── Fixed back button ghost ── */}
+      <View style={[sk.backBtn, { top: insets.top + 12 }]}>
+        <Animated.View style={[sk.iconCircle, { opacity: shimmerOpacity }]} />
+      </View>
+
+      {/* ── Store info card ── */}
+      <View style={sk.infoCard}>
+        {/* Logo bubble overlapping hero */}
+        <Animated.View style={[sk.logoBubble, { opacity: shimmerOpacity }]} />
+
+        {/* Store name */}
+        <Block w="62%" h={22} radius={8} style={{ marginTop: 14, marginLeft: 4 }} />
+        <Block w="45%" h={14} radius={6} style={{ marginTop: 8, marginLeft: 4 }} />
+
+        {/* Delivery info chips */}
+        <View style={sk.chipsRow}>
+          <Animated.View style={[sk.chip, { opacity: shimmerOpacity }]} />
+          <Animated.View style={[sk.chip, { width: 90, opacity: shimmerOpacity }]} />
+          <Animated.View style={[sk.chip, { width: 70, opacity: shimmerOpacity }]} />
+        </View>
+      </View>
+
+      {/* ── Category pills row ── */}
+      <View style={sk.pillsRow}>
+        {[80, 60, 90, 70, 55].map((w, i) => (
+          <Animated.View key={i} style={[sk.pill, { width: w, opacity: shimmerOpacity }]} />
+        ))}
+      </View>
+
+      {/* ── Product rows ── */}
+      <View style={sk.productList}>
+        {[0, 1, 2, 3].map((i) => (
+          <View key={i} style={sk.productRow}>
+            <View style={sk.productInfo}>
+              <Block w="70%" h={16} radius={7} />
+              <Block w="50%" h={13} radius={5} style={{ marginTop: 7 }} />
+              <Block w="30%" h={13} radius={5} style={{ marginTop: 7 }} />
+            </View>
+            <Animated.View style={[sk.productThumb, { opacity: shimmerOpacity }]} />
+          </View>
+        ))}
+      </View>
+    </View>
+  );
+}
+
+const sk = StyleSheet.create({
+  root: { flex: 1, backgroundColor: BRAND.BG },
+  hero: {
+    width: SCREEN_W,
+    height: 220,
+    backgroundColor: BRAND.LIGHT,
+  },
+  backBtn: {
+    position: 'absolute',
+    left: 16,
+    zIndex: 10,
+  },
+  iconCircle: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: BRAND.BORDER,
+  },
+  infoCard: {
+    backgroundColor: BRAND.SURFACE,
+    marginHorizontal: 16,
+    marginTop: -24,
+    borderRadius: 20,
+    padding: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  logoBubble: {
+    position: 'absolute',
+    top: -22,
+    right: 16,
+    width: 48,
+    height: 48,
+    borderRadius: 14,
+    backgroundColor: BRAND.LIGHT,
+    borderWidth: 2,
+    borderColor: BRAND.BG,
+  },
+  chipsRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginTop: 14,
+  },
+  chip: {
+    height: 28,
+    width: 110,
+    borderRadius: 99,
+    backgroundColor: BRAND.LIGHT,
+  },
+  pillsRow: {
+    flexDirection: 'row',
+    gap: 8,
+    paddingHorizontal: 16,
+    marginTop: 16,
+  },
+  pill: {
+    height: 34,
+    borderRadius: 99,
+    backgroundColor: BRAND.LIGHT,
+  },
+  productList: {
+    paddingHorizontal: 16,
+    marginTop: 20,
+    gap: 0,
+  },
+  productRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 18,
+    borderBottomWidth: 1,
+    borderBottomColor: BRAND.BORDER,
+    gap: 12,
+  },
+  productInfo: {
+    flex: 1,
+    gap: 0,
+  },
+  productThumb: {
+    width: 88,
+    height: 88,
+    borderRadius: 14,
+    backgroundColor: BRAND.LIGHT,
+  },
+});
+
+
 
 function ProductDetailSheet({
   item,
@@ -293,6 +481,8 @@ function ProductDetailSheet({
   storeName,
   initialCartItem,
   isEditing,
+  storeRating,
+  storeRatingCount,
 }: {
   item: any;
   visible: boolean;
@@ -301,39 +491,31 @@ function ProductDetailSheet({
   storeName?: string;
   initialCartItem?: any;
   isEditing?: boolean;
+  storeRating?: number;
+  storeRatingCount?: number;
 }) {
   const insets = useSafeAreaInsets();
   const { lang, isRTL } = useLangStore();
   const [qty, setQty] = useState(1);
-  const [selectedRequired, setSelectedRequired] = useState<Record<string, string>>({});
-  const [selectedOptional, setSelectedOptional] = useState<Record<string, boolean>>({});
+
+  // Normalize option groups so any schema variation (supplements, options, choices) is supported
+  const groups = useMemo(
+    () => normalizeMobileOptionGroups(item?.option_groups || item?.options || []),
+    [item?.option_groups, item?.options],
+  );
+
+  const [selections, setSelections] = useState<ProductSelections>({});
 
   // Custom sheet transition animated value
   const sheetAnim = useRef(new Animated.Value(0)).current;
-
-  // Spring animation for price label on quantity change
   const qtyScaleAnim = useRef(new Animated.Value(1)).current;
 
   // Reset state and trigger entry animation when visible changes
   useEffect(() => {
     if (visible && item) {
-      setQty(initialCartItem?.quantity || 1);
-      const defaults: Record<string, string> = {};
-      (item.option_groups || []).forEach((g: any) => {
-        if (g.type === 'required' && g.options?.length) {
-          defaults[g.id] = g.options[0].id;
-        }
-      });
-      const optional: Record<string, boolean> = {};
-      for (const selected of (initialCartItem?.selected_options || [])) {
-        const group = (item.option_groups || item.options || []).find((candidate: any) => candidate.id === selected.option_id);
-        if (group?.type === 'required') defaults[group.id] = selected.choice_id || selected.id;
-        else optional[selected.choice_id || selected.id] = true;
-      }
-      setSelectedRequired(defaults);
-      setSelectedOptional(optional);
+      setQty(Math.min(50, Math.max(1, Number(initialCartItem?.quantity) || 1)));
+      setSelections(restoreProductSelections(groups, initialCartItem?.selected_options || []));
 
-      // Slide up
       sheetAnim.setValue(0);
       Animated.timing(sheetAnim, {
         toValue: 1,
@@ -342,7 +524,7 @@ function ProductDetailSheet({
         useNativeDriver: true,
       }).start();
     }
-  }, [visible, item?.id, initialCartItem?.id]);
+  }, [groups, visible, item?.id, initialCartItem?.id]);
 
   // Spring pop animation on quantity change
   useEffect(() => {
@@ -355,10 +537,7 @@ function ProductDetailSheet({
     }).start();
   }, [qty]);
 
-  if (!item) return null;
-
   const handleClose = () => {
-    // Slide down smoothly
     Animated.timing(sheetAnim, {
       toValue: 0,
       duration: 250,
@@ -369,49 +548,50 @@ function ProductDetailSheet({
     });
   };
 
-  const groups: any[] = item.option_groups || item.options || [];
-  const requiredGroups = groups.filter((g: any) => g.type === 'required');
-  const optionalGroups = groups.filter((g: any) => g.type === 'optional');
+  const selectionsValid = useMemo(
+    () => productSelectionsAreValid(groups, selections),
+    [groups, selections],
+  );
 
-  const allSelectedOptions: any[] = [];
-
-  for (const g of requiredGroups) {
-    const selId = selectedRequired[g.id];
-    const opt = g.options?.find((o: any) => o.id === selId);
-    if (opt) {
-      const optName = lang === 'ar' ? (opt.name_ar || opt.name) : (opt.name || opt.name_ar);
-      allSelectedOptions.push({
-        id: opt.id,
-        name: optName,
-        price_delta: opt.price_delta || 0,
-        option_id: g.id,
-        option_label: g.label || g.name || '',
-        choice_id: opt.id,
-        choice_name: optName
+  const allSelectedOptions = useMemo(() => {
+    const list: any[] = [];
+    groups.forEach((group) => {
+      const selectedChoiceIds = selections[group.id] || [];
+      group.choices.forEach((choice) => {
+        if (selectedChoiceIds.includes(choice.id)) {
+          const choiceName = choice.label_ar && choice.label && choice.label_ar !== choice.label
+            ? `${choice.label_ar}|${choice.label}`
+            : choice.label_ar || choice.label;
+          list.push({
+            id: choice.id,
+            name: choiceName,
+            price_delta: choice.price_delta_dh,
+            option_id: group.id,
+            option_label: group.label || group.label_ar || '',
+            choice_id: choice.id,
+            choice_name: choiceName,
+          });
+        }
       });
-    }
-  }
-  for (const g of optionalGroups) {
-    for (const opt of (g.options || [])) {
-      if (selectedOptional[opt.id]) {
-        const optName = lang === 'ar' ? (opt.name_ar || opt.name) : (opt.name || opt.name_ar);
-        allSelectedOptions.push({
-          id: opt.id,
-          name: optName,
-          price_delta: opt.price_delta || 0,
-          option_id: g.id,
-          option_label: g.label || g.name || '',
-          choice_id: opt.id,
-          choice_name: optName
-        });
-      }
-    }
-  }
+    });
+    return list;
+  }, [groups, selections]);
 
-  // Check if all required groups have a selection
-  const allRequiredSelected = requiredGroups.every((g: any) => !!selectedRequired[g.id]);
+  // All price derivations in a single memo — only re-runs when options, qty, or item changes
+  // Must be before any early return to satisfy React Rules of Hooks
+  const { basePrice, optionsDelta, totalPriceDh, buttonText } = useMemo(() => {
+    const base = Number(item?.display_price_dh ?? item?.price_dh ?? item?.price ?? item?.unit_price ?? 0);
+    const delta = allSelectedOptions.reduce((sum: number, opt: any) => sum + (Number(opt.price_delta) || 0), 0);
+    const total = (base + delta) * qty;
+    const formatted = money(total);
+    const text = isEditing
+      ? (lang === 'ar' ? `تحديث المنتج  •  ${formatted}` : lang === 'en' ? `Update item  •  ${formatted}` : `Mettre à jour  •  ${formatted}`)
+      : (lang === 'ar' ? `إضافة إلى السلة  •  ${formatted}` : lang === 'en' ? `Add to cart  •  ${formatted}` : `Ajouter au panier  •  ${formatted}`);
+    return { basePrice: base, optionsDelta: delta, totalPriceDh: total, buttonText: text };
+  }, [allSelectedOptions, qty, isEditing, lang, item]);
 
-  // Interpolated visual values
+  if (!item) return null;
+
   const backdropOpacity = sheetAnim.interpolate({
     inputRange: [0, 1],
     outputRange: [0, 0.45],
@@ -427,11 +607,9 @@ function ProductDetailSheet({
   return (
     <Modal visible={visible} animationType="none" transparent onRequestClose={handleClose}>
       <View style={s.sheetOverlay}>
-        {/* Backdrop (animated opacity) */}
         <Animated.View style={[StyleSheet.absoluteFill, { backgroundColor: '#000', opacity: backdropOpacity }]} />
         <Pressable style={s.sheetBackdrop} onPress={handleClose} />
 
-        {/* Content (animated slide-up) */}
         <Animated.View
           style={[
             s.sheetContainer,
@@ -441,7 +619,6 @@ function ProductDetailSheet({
             },
           ]}
         >
-          {/* Drag handle */}
           <View style={s.sheetHandle}>
             <View style={s.sheetHandleBar} />
           </View>
@@ -451,14 +628,12 @@ function ProductDetailSheet({
             contentContainerStyle={s.sheetScroll}
             bounces={false}
           >
-            {/* Hero image with floating action buttons overlay (direction aware positioning) */}
             <View style={s.sheetImageWrap}>
               <Image
                 source={{ uri: resolveStoreImageUrl(item.image_url, FALLBACK_ITEM) }}
                 style={s.sheetImage}
                 contentFit="cover"
               />
-              {/* Floating Back/Close button */}
               <Pressable
                 style={[
                   s.sheetCloseBtn,
@@ -468,7 +643,6 @@ function ProductDetailSheet({
               >
                 <Ionicons name="arrow-back" size={20} color="#111827" />
               </Pressable>
-              {/* Floating Share & Heart buttons */}
               <View
                 style={[
                   s.sheetImageActions,
@@ -484,7 +658,6 @@ function ProductDetailSheet({
               </View>
             </View>
 
-            {/* Product details info panel */}
             <Text style={[s.sheetTitle, { textAlign: dirText(isRTL) }]}>
               {lang === 'ar' ? (item.name_ar || item.name) : parseBilingualText(item.name, lang, item.name_ar)}
             </Text>
@@ -494,98 +667,133 @@ function ProductDetailSheet({
               </Text>
             )}
             
-            {/* Rating row (high fidelity simulation, direction aware layout) */}
-            <View style={[s.sheetRatingRow, { flexDirection: dirRow(isRTL), justifyContent: isRTL ? 'flex-end' : 'flex-start' }]}>
-              <Ionicons name="star" size={14} color="#FBBF24" />
-              <Text style={s.sheetRatingText}>4.7</Text>
-              <Text style={s.sheetRatingText}> </Text>
-              <Text style={s.sheetRatingCount}>(512 {lang === 'ar' ? 'تقييم' : 'avis'})</Text>
-            </View>
+            {(storeRating != null && storeRating > 0) && (
+              <View style={[s.sheetRatingRow, { flexDirection: dirRow(isRTL), justifyContent: isRTL ? 'flex-end' : 'flex-start' }]}>
+                <Ionicons name="star" size={14} color="#FBBF24" />
+                <Text style={s.sheetRatingText}>{storeRating.toFixed(1)}</Text>
+                {storeRatingCount != null && storeRatingCount > 0 && (
+                  <Text style={s.sheetRatingCount}>({storeRatingCount} {lang === 'ar' ? 'تقييم' : 'avis'})</Text>
+                )}
+              </View>
+            )}
 
-            {/* Product description */}
             <Text style={[s.sheetDesc, { textAlign: dirText(isRTL) }]}>
               {lang === 'ar' ? (item.description_ar || item.description || '') : parseBilingualText(item.description, lang, item.description_ar || '')}
             </Text>
 
-            {/* Required option groups (rendered as horizontal size cards side-by-side) */}
-            {requiredGroups.map((group: any) => (
-              <View key={group.id} style={s.optionGroup}>
-                <Text style={[s.optionGroupTitle, { textAlign: dirText(isRTL) }]}>
-                  {lang === 'ar' ? (group.name_ar || parseBilingualText(group.name, 'fr')) : parseBilingualText(group.name, lang, group.name_ar)}
-                </Text>
-                <ScrollView
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  contentContainerStyle={[s.horizontalOptionsScroll, { flexDirection: dirRow(isRTL) }]}
-                  style={{ transform: [{ scaleX: isRTL ? -1 : 1 }] }}
-                >
-                  {(group.options || []).map((opt: any) => {
-                    const selected = selectedRequired[group.id] === opt.id;
-                    return (
-                      <Pressable
-                        key={opt.id}
-                        style={[
-                          s.optionCard,
-                          selected ? s.optionCardSelected : s.optionCardUnselected,
-                          { transform: [{ scaleX: isRTL ? -1 : 1 }] }
-                        ]}
-                        onPress={() => setSelectedRequired(prev => ({ ...prev, [group.id]: opt.id }))}
-                      >
-                        <Text style={[s.optionCardLabel, selected && s.optionCardLabelSelected]}>
-                          {lang === 'ar' ? (opt.name_ar || parseBilingualText(opt.name, 'fr')) : parseBilingualText(opt.name, lang, opt.name_ar)}
-                        </Text>
-                        <Text style={[s.optionCardPrice, selected && s.optionCardPriceSelected]}>
-                          {opt.price_delta > 0 ? `+${money(opt.price_delta)}` : money(0)}
-                        </Text>
-                      </Pressable>
-                    );
-                  })}
-                </ScrollView>
-              </View>
-            ))}
+            {/* Render all Option Groups & Supplements */}
+            {groups.map((group) => {
+              const groupTitle = lang === 'ar' ? (group.label_ar || group.label) : group.label;
+              const isMultiple = group.multiple;
+              const isRequired = group.required || group.min_selections > 0;
 
-            {/* Optional groups (Extras checkboxes) */}
-            {optionalGroups.map((group: any) => (
-              <View key={group.id} style={s.optionGroup}>
-                <Text style={[s.optionGroupTitle, { textAlign: dirText(isRTL) }]}>
-                  {lang === 'ar' ? (group.name_ar || parseBilingualText(group.name, 'fr')) : parseBilingualText(group.name, lang, group.name_ar)}
-                </Text>
-                {(group.options || []).map((opt: any) => {
-                  const checked = !!selectedOptional[opt.id];
-                  return (
-                    <Pressable
-                      key={opt.id}
-                      style={({ pressed }) => [
-                        s.optionRow,
-                        { flexDirection: dirRow(isRTL) },
-                        pressed && { opacity: 0.8 }
-                      ]}
-                      onPress={() => setSelectedOptional(prev => ({ ...prev, [opt.id]: !prev[opt.id] }))}
-                    >
-                      <View style={{ flexDirection: dirRow(isRTL), alignItems: 'center', gap: 12 }}>
-                        <View style={[s.checkbox, checked && s.checkboxChecked]}>
-                          {checked && <Ionicons name="checkmark" size={12} color="#fff" />}
-                        </View>
-                        <Text style={[s.optionName, checked && s.optionNameSelected, { textAlign: dirText(isRTL) }]}>
-                          {lang === 'ar' ? (opt.name_ar || parseBilingualText(opt.name, 'fr')) : parseBilingualText(opt.name, lang, opt.name_ar)}
+              if (!isMultiple) {
+                // Obligatory Single Choice -> Horizontal Size / Choice Box Cards
+                return (
+                  <View key={group.id} style={s.optionGroup}>
+                    <View style={[s.optionGroupHeader, { flexDirection: dirRow(isRTL) }]}>
+                      <Text style={[s.optionGroupTitle, { textAlign: dirText(isRTL) }]}>
+                        {groupTitle}
+                      </Text>
+                      <View style={[s.badgeTag, isRequired ? s.badgeRequired : s.badgeOptional]}>
+                        <Text style={[s.badgeTagText, isRequired ? s.badgeRequiredText : s.badgeOptionalText]}>
+                          {isRequired 
+                            ? (lang === 'ar' ? 'مطلوب (اختيار 1)' : 'Obligatoire (1 choix)')
+                            : (lang === 'ar' ? 'اختياري' : 'Optionnel')}
                         </Text>
                       </View>
-                      {(opt.price_delta || 0) > 0 && (
-                        <Text style={s.optionDelta}>+{money(opt.price_delta)}</Text>
-                      )}
-                    </Pressable>
-                  );
-                })}
-              </View>
-            ))}
+                    </View>
 
-            {/* Spacer for bottom bar */}
-            <View style={{ height: px(110) }} />
+                    <View style={[s.sizeBoxRow, { flexDirection: dirRow(isRTL) }]}>
+                      {group.choices.map((choice) => {
+                        const selected = (selections[group.id] || []).includes(choice.id);
+                        const choiceTitle = lang === 'ar' ? (choice.label_ar || choice.label) : choice.label;
+                        const priceText = choice.price_delta_dh > 0 
+                          ? `+${money(choice.price_delta_dh)}` 
+                          : (lang === 'ar' ? 'مجاناً' : 'Inclus');
+
+                        return (
+                          <Pressable
+                            key={choice.id}
+                            style={({ pressed }) => [
+                              s.sizeBoxCard,
+                              selected ? s.sizeBoxCardSelected : s.sizeBoxCardUnselected,
+                              pressed && { opacity: 0.85 },
+                            ]}
+                            onPress={() => setSelections(cur => selectProductChoice(cur, group, choice.id))}
+                          >
+                            <View style={[s.radioDot, selected && s.radioDotSelected]}>
+                              {selected && <View style={s.radioDotInner} />}
+                            </View>
+                            <Text style={[s.sizeBoxTitle, selected && s.sizeBoxTitleSelected]} numberOfLines={1}>
+                              {choiceTitle}
+                            </Text>
+                            <Text style={[s.sizeBoxPrice, selected && s.sizeBoxPriceSelected]}>
+                              {priceText}
+                            </Text>
+                          </Pressable>
+                        );
+                      })}
+                    </View>
+                  </View>
+                );
+              }
+
+              // Multiple Choice -> Clean Checkbox Row List (Supplements / Extras)
+              return (
+                <View key={group.id} style={s.optionGroup}>
+                  <View style={[s.optionGroupHeader, { flexDirection: dirRow(isRTL) }]}>
+                    <Text style={[s.optionGroupTitle, { textAlign: dirText(isRTL) }]}>
+                      {groupTitle}
+                    </Text>
+                    <View style={[s.badgeTag, s.badgeOptional]}>
+                      <Text style={[s.badgeTagText, s.badgeOptionalText]}>
+                        {lang === 'ar' ? 'إضافات (اختياري)' : 'Suppléments (Optionnel)'}
+                      </Text>
+                    </View>
+                  </View>
+
+                  <View style={s.suppListCard}>
+                    {group.choices.map((choice, idx) => {
+                      const checked = (selections[group.id] || []).includes(choice.id);
+                      const choiceTitle = lang === 'ar' ? (choice.label_ar || choice.label) : choice.label;
+                      const isLast = idx === group.choices.length - 1;
+                      return (
+                        <Pressable
+                          key={choice.id}
+                          style={({ pressed }) => [
+                            s.suppRow,
+                            !isLast && s.suppRowBorder,
+                            { flexDirection: dirRow(isRTL) },
+                            pressed && { opacity: 0.7 }
+                          ]}
+                          onPress={() => setSelections(cur => selectProductChoice(cur, group, choice.id))}
+                        >
+                          <View style={{ flexDirection: dirRow(isRTL), alignItems: 'center', gap: 12 }}>
+                            <View style={[s.suppCheckbox, checked && s.suppCheckboxChecked]}>
+                              {checked && <Ionicons name="checkmark" size={14} color="#ffffff" />}
+                            </View>
+                            <Text style={[s.suppLabel, checked && s.suppLabelChecked, { textAlign: dirText(isRTL) }]}>
+                              {choiceTitle}
+                            </Text>
+                          </View>
+                          <Text style={[s.suppPrice, choice.price_delta_dh === 0 && s.suppPriceFree]}>
+                            {choice.price_delta_dh > 0 ? `+${money(choice.price_delta_dh)}` : (lang === 'ar' ? 'مجاناً' : 'Gratuit')}
+                          </Text>
+                        </Pressable>
+                      );
+                    })}
+                  </View>
+                </View>
+              );
+            })}
+
+            <View style={{ height: px(120) }} />
           </ScrollView>
 
-          {/* Sticky bottom bar: Elegant stepper on left, action button containing total on right */}
-          <View style={[s.sheetBottom, { flexDirection: dirRow(isRTL) }]}>
-            {/* Elegant Stepper (pop-scale pop animations when pressed) */}
+          {/* Sticky Bottom Action Bar */}
+          <View style={[s.sheetBottom, { paddingBottom: Math.max(insets.bottom, px(16)), flexDirection: dirRow(isRTL) }]}>
+            {/* Quantity Stepper */}
             <View style={[s.qtyStepper, { flexDirection: dirRow(isRTL) }]}>
               <Pressable
                 style={s.qtyStepperBtn}
@@ -602,23 +810,21 @@ function ProductDetailSheet({
               </Pressable>
             </View>
 
-            {/* Add to cart action button showing total price */}
+            {/* Main Action Button */}
             <Pressable
               style={({ pressed }) => [
                 s.addToCartBtn,
-                !allRequiredSelected && { opacity: 0.5 },
+                !selectionsValid && { opacity: 0.5 },
                 pressed && { transform: [{ scale: 0.98 }], opacity: 0.95 },
               ]}
               onPress={() => {
-                if (!allRequiredSelected) return;
+                if (!selectionsValid) return;
                 onConfirm(item, qty, allSelectedOptions);
               }}
-              disabled={!allRequiredSelected}
+              disabled={!selectionsValid}
             >
               <Animated.Text style={[s.addToCartBtnText, { transform: [{ scale: qtyScaleAnim }] }]}>
-                {lang === 'ar' 
-                  ? 'إضافة إلى السلة'
-                  : isEditing ? (lang === 'en' ? 'Update item' : 'Mettre a jour') : 'Ajouter au panier'}
+                {buttonText}
               </Animated.Text>
             </Pressable>
           </View>
@@ -648,10 +854,13 @@ export default function StoreProductsScreen() {
   const scrollY = useRef(new Animated.Value(0)).current;
   const categoryY = useRef<Record<string, number>>({});
 
-  const [store, setStoreData] = useState<any>(null);
+  const { data: storeData, isLoading: storeLoading } = useStoreQuery(id ?? '');
+  const { data: menuData, isLoading: menuLoading } = useStoreMenuQuery(id ?? '');
+
+  const store = storeData ?? null;
+  const loading = storeLoading || menuLoading;
   const schedule = useMemo(() => isStoreCurrentlyOpen(store), [store]);
-  const [categories, setCategories] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+
   const [isFav, setIsFav] = useState(false);
   const [activeCategory, setActiveCategory] = useState<string>('popular');
   const [selectedItem, setSelectedItem] = useState<any>(null);
@@ -666,6 +875,11 @@ export default function StoreProductsScreen() {
   const indicatorX = useRef(new Animated.Value(0)).current;
   const indicatorWidth = useRef(new Animated.Value(0)).current;
   const hasInitializedIndicator = useRef(false);
+
+  // Process menu data — filter out empty categories
+  const categories = useMemo(() => {
+    return (menuData ?? []).filter((c: any) => c.items?.length);
+  }, [menuData]);
 
   useEffect(() => {
     const meas = pillMeasurements.current[activeCategory];
@@ -693,26 +907,18 @@ export default function StoreProductsScreen() {
     }
   }, [activeCategory, categories]);
 
-  /* ── Data fetch ────────────────────────────────────── */
+  // Initialize activeCategory when categories first load
   useEffect(() => {
-    if (!id) return;
-    setLoading(true);
-    Promise.all([
-      getStoreById(id),
-      getStoreMenu(id),
-      user?.id ? import('../../../lib/storeApi').then(m => m.checkFavorite(user.id, id)) : Promise.resolve(false),
-    ])
-      .then(([storeResult, menuResult, fav]) => {
-        if (storeResult.data) setStoreData(storeResult.data);
-        if (menuResult.data) {
-          const withItems = menuResult.data.filter((c: any) => c.items?.length);
-          setCategories(withItems);
-          if (withItems[0]?.id) setActiveCategory(String(withItems[0].id));
-        }
-        setIsFav(Boolean(fav));
-      })
-      .finally(() => setLoading(false));
-  }, [id, user?.id]);
+    if (categories.length > 0 && categories[0]?.id) {
+      setActiveCategory(String(categories[0].id));
+    }
+  }, [categories]);
+
+  // Favourite check — user-specific, not part of store cache
+  useEffect(() => {
+    if (!user?.id || !id) return;
+    checkFavorite(user.id, id).then((fav) => setIsFav(Boolean(fav))).catch(() => {});
+  }, [user?.id, id]);
 
   useEffect(() => {
     LayoutAnimation.configureNext({
@@ -834,7 +1040,8 @@ export default function StoreProductsScreen() {
       });
       setEditingCartItem(null);
       setSelectedItem(null);
-      router.replace('/(flows)/cart');
+      if (router.canGoBack()) router.back();
+      else router.replace({ pathname: '/(tabs)/cart' });
       return;
     }
     addToCart(item, qty, options);
@@ -894,24 +1101,18 @@ export default function StoreProductsScreen() {
     }
   };
 
-  /* ── Loading ─────────────────────────────── */
-  if (loading) {
-    return (
-      <View style={s.loadingRoot}>
-        <ActivityIndicator color={BRAND.RED} size="large" />
-      </View>
-    );
-  }
+  /* ── Loading — skeleton screen ──────────────────────────────── */
+  if (loading) return <StoreSkeletonScreen />;
 
   /* ── Derived data ─────────────────────────── */
-  const storeName   = lang === 'ar' ? (store?.name_ar || store?.name || 'روز باتيسري') : parseBilingualText(store?.name, lang, store?.name_ar || 'Rose Patisserie');
+  const storeName   = lang === 'ar' ? (store?.name_ar || store?.name || '') : parseBilingualText(store?.name || '', lang, store?.name_ar || '');
   const storeAddress = lang === 'ar' ? (store?.address_ar || store?.address || '') : (store?.address || store?.address_ar || '');
   const cover       = resolveStoreImageUrl(store?.cover_url || store?.logo_url, FALLBACK_COVER);
-  const logo        = store?.logo_url ? resolveStoreImageUrl(store.logo_url, "") : undefined;
-  const deliveryFee = Number(store?.delivery_fee || 5);
-  const deliveryMin = store?.delivery_time_min || 20;
-  const deliveryMax = store?.delivery_time_max || 35;
-  const rating      = Number(store?.rating_avg || 4.8).toFixed(1);
+  const logo        = store?.logo_url ? resolveStoreImageUrl(store.logo_url, '') : undefined;
+  const deliveryFee = Number(store?.delivery_fee || 0);
+  const deliveryMin = store?.delivery_time_min || null;
+  const deliveryMax = store?.delivery_time_max || null;
+  const rating      = Number(store?.rating_avg || 0);
 
   /* ── Scroll-driven animations ──────────────────── */
   const HERO_H = px(240);
@@ -1465,7 +1666,7 @@ export default function StoreProductsScreen() {
               s.viewCartBtn,
               pressed && { transform: [{ scale: 0.97 }], opacity: 0.95 }
             ]}
-            onPress={() => router.push('/(flows)/cart')}
+            onPress={() => router.push('/(tabs)/cart')}
           >
             <Text style={s.viewCartText}>{lang === 'ar' ? 'عرض السلة' : 'Voir le panier'}</Text>
           </Pressable>
@@ -1476,11 +1677,12 @@ export default function StoreProductsScreen() {
       <ProductDetailSheet
         item={selectedItem}
         visible={!!selectedItem}
-        onClose={() => { setSelectedItem(null); if (editingCartItem) { setEditingCartItem(null); router.replace('/(flows)/cart'); } }}
+        onClose={() => { setSelectedItem(null); if (editingCartItem) { setEditingCartItem(null); if (router.canGoBack()) router.back(); else router.replace('/(tabs)/cart'); } }}
         onConfirm={handleSheetConfirm}
         storeName={storeName}
         initialCartItem={editingCartItem}
         isEditing={Boolean(editingCartItem)}
+        storeRating={rating > 0 ? rating : undefined}
       />
     </View>
   );
@@ -2262,86 +2464,201 @@ const s = StyleSheet.create({
     marginBottom: px(24),
     paddingHorizontal: px(20),
   },
+  optionGroupHeader: {
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: px(12),
+  },
   optionGroupTitle: {
     fontFamily: FONTS.DISPLAY,
     fontSize: px(16),
     color: '#171717',
-    marginBottom: px(12),
   },
-  horizontalOptionsScroll: {
-    gap: px(12),
-    paddingBottom: px(4),
+  badgeTag: {
+    paddingHorizontal: px(10),
+    paddingVertical: px(3),
+    borderRadius: px(12),
   },
-  optionCard: {
-    width: px(108),
-    height: px(72),
+  badgeRequired: {
+    backgroundColor: '#FEE2E2',
+  },
+  badgeOptional: {
+    backgroundColor: '#F3F4F6',
+  },
+  badgeTagText: {
+    fontFamily: FONTS.SEMIBOLD,
+    fontSize: px(11),
+  },
+  badgeRequiredText: {
+    color: '#DC2626',
+  },
+  badgeOptionalText: {
+    color: '#4B5563',
+  },
+  /* Obligatory Box Cards Wrap */
+  sizeBoxRow: {
+    flexWrap: 'wrap',
+    gap: px(10),
+  },
+  sizeBoxCard: {
+    width: px(112),
+    height: px(76),
     borderRadius: px(16),
-    borderWidth: StyleSheet.hairlineWidth,
+    borderWidth: 2,
     alignItems: 'center',
     justifyContent: 'center',
     gap: px(2),
+    paddingHorizontal: px(8),
   },
-  optionCardUnselected: {
+  sizeBoxCardUnselected: {
     backgroundColor: '#FAFAF8',
-    borderColor: 'rgba(0,0,0,0.08)',
+    borderColor: '#E5E7EB',
   },
-  optionCardSelected: {
-    backgroundColor: '#FFF6D8',
-    borderColor: '#E6B422',
+  sizeBoxCardSelected: {
+    backgroundColor: '#FFFBEB',
+    borderColor: '#F59E0B',
   },
-  optionCardLabel: {
+  radioDot: {
+    width: px(16),
+    height: px(16),
+    borderRadius: px(8),
+    borderWidth: 1.5,
+    borderColor: '#9CA3AF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: px(2),
+  },
+  radioDotSelected: {
+    borderColor: '#D97706',
+    backgroundColor: '#FFFFFF',
+  },
+  radioDotInner: {
+    width: px(8),
+    height: px(8),
+    borderRadius: px(4),
+    backgroundColor: '#D97706',
+  },
+  sizeBoxTitle: {
     fontFamily: FONTS.SEMIBOLD,
-    fontSize: px(13),
-    color: '#3F3F46',
+    fontSize: px(13.5),
+    color: '#374151',
   },
-  optionCardLabelSelected: {
+  sizeBoxTitleSelected: {
     fontFamily: FONTS.DISPLAY,
-    color: '#111827',
+    color: '#92400E',
   },
-  optionCardPrice: {
+  sizeBoxPrice: {
     fontFamily: FONTS.BODY,
     fontSize: px(12),
-    color: '#5F6368',
+    color: '#6B7280',
   },
-  optionCardPriceSelected: {
+  sizeBoxPriceSelected: {
     fontFamily: FONTS.SEMIBOLD,
-    color: '#9A6A00',
-  },
-  optionRow: {
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: px(12),
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: 'rgba(0,0,0,0.045)',
-  },
-  optionName: {
-    fontFamily: FONTS.BODY,
-    fontSize: px(14),
-    color: '#4B5563',
-  },
-  optionNameSelected: {
-    fontFamily: FONTS.SEMIBOLD,
-    color: BRAND.TEXT,
-  },
-  optionDelta: {
-    fontFamily: FONTS.SEMIBOLD,
-    fontSize: px(13),
-    color: BRAND.TEXT2,
+    color: '#B45309',
   },
 
-  /* Checkbox */
-  checkbox: {
-    width: px(20),
-    height: px(20),
+  /* Optional Supplements Clean List Card */
+  suppListCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: px(14),
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.08)',
+    overflow: 'hidden',
+  },
+  suppRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: px(16),
+    paddingVertical: px(14),
+  },
+  suppRowBorder: {
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: 'rgba(0,0,0,0.07)',
+  },
+  suppCheckbox: {
+    width: px(22),
+    height: px(22),
     borderRadius: px(6),
     borderWidth: 2,
     borderColor: '#D1D5DB',
+    backgroundColor: '#FFFFFF',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  checkboxChecked: {
+  suppCheckboxChecked: {
     backgroundColor: BRAND.RED,
     borderColor: BRAND.RED,
+  },
+  suppLabel: {
+    fontFamily: FONTS.BODY,
+    fontSize: px(15),
+    color: '#374151',
+  },
+  suppLabelChecked: {
+    fontFamily: FONTS.SEMIBOLD,
+    color: '#111827',
+  },
+  suppPrice: {
+    fontFamily: FONTS.SEMIBOLD,
+    fontSize: px(14),
+    color: '#059669',
+  },
+  suppPriceFree: {
+    fontFamily: FONTS.BODY,
+    color: '#9CA3AF',
+  },
+  supplementLabel: {
+    fontFamily: FONTS.BODY,
+    fontSize: px(15),
+    color: '#374151',
+  },
+  supplementLabelChecked: {
+    fontFamily: FONTS.SEMIBOLD,
+    color: '#111827',
+  },
+  supplementDeltaPrice: {
+    fontFamily: FONTS.SEMIBOLD,
+    fontSize: px(14),
+    color: '#059669',
+  },
+  supplementDeltaFree: {
+    fontFamily: FONTS.BODY,
+    fontSize: px(13),
+    color: '#6B7280',
+  },
+  checkboxSquare: {
+    width: px(22),
+    height: px(22),
+    borderRadius: px(6),
+    borderWidth: 1.5,
+    borderColor: '#9CA3AF',
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  checkboxSquareChecked: {
+    backgroundColor: BRAND.RED,
+    borderColor: BRAND.RED,
+  },
+  checkboxBtnLabel: {
+    fontFamily: FONTS.BODY,
+    fontSize: px(15),
+    color: '#374151',
+  },
+  checkboxBtnLabelChecked: {
+    fontFamily: FONTS.DISPLAY,
+    color: '#991B1B',
+  },
+  checkboxBtnPrice: {
+    fontFamily: FONTS.SEMIBOLD,
+    fontSize: px(14),
+    color: '#059669',
+  },
+  checkboxBtnPriceFree: {
+    fontFamily: FONTS.BODY,
+    fontSize: px(13),
+    color: '#6B7280',
   },
 
   /* Quantity select stepper */
@@ -2360,21 +2677,22 @@ const s = StyleSheet.create({
   qtyStepper: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F1F1EF',
-    borderRadius: px(16),
-    height: px(36),
-    paddingHorizontal: px(4),
+    backgroundColor: '#F3F4F6',
+    borderRadius: px(24),
+    height: px(48),
+    paddingHorizontal: px(6),
   },
   qtyStepperBtn: {
-    width: px(32),
-    height: px(32),
+    width: px(36),
+    height: px(36),
+    borderRadius: px(18),
     alignItems: 'center',
     justifyContent: 'center',
   },
   qtyText: {
     fontFamily: FONTS.DISPLAY,
-    fontSize: px(15),
-    color: BRAND.TEXT,
+    fontSize: px(16),
+    color: '#111827',
     minWidth: px(28),
     textAlign: 'center',
   },
@@ -2386,13 +2704,17 @@ const s = StyleSheet.create({
     right: 0,
     bottom: 0,
     alignItems: 'center',
-    gap: px(14),
+    gap: px(12),
     paddingHorizontal: px(20),
-    paddingTop: px(12),
-    paddingBottom: px(20),
+    paddingTop: px(14),
     backgroundColor: '#FFFFFF',
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: 'rgba(0,0,0,0.07)',
+    borderTopColor: 'rgba(0,0,0,0.08)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 8,
   },
   pricePill: {
     flex: 1,
@@ -2411,12 +2733,13 @@ const s = StyleSheet.create({
     color: '#171717',
   },
   addToCartBtn: {
-    flex: 2,
+    flex: 1,
     height: px(48),
     borderRadius: px(24),
     backgroundColor: BRAND.RED,
     alignItems: 'center',
     justifyContent: 'center',
+    paddingHorizontal: px(16),
   },
   addToCartBtnText: {
     fontFamily: FONTS.DISPLAY,

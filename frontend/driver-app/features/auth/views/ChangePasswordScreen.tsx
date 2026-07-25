@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { View, Text, TextInput, Pressable, StyleSheet, ActivityIndicator, Alert, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
+import { AppIcon } from '@/components/ui/AppIcon';
 import { BRAND, FONTS } from '@/constants/brand';
 import { useLangStore } from '@/lib/i18n';
 import { driverApi } from '@/lib/api';
@@ -62,7 +62,7 @@ export function ChangePasswordScreen() {
             onPress={() => router.back()}
             accessibilityLabel="رجوع"
           >
-            <Ionicons name="arrow-back" size={20} color={BRAND.TEXT} />
+            <AppIcon name="arrow-back" size={20} color={BRAND.TEXT} />
           </Pressable>
           <Text style={styles.headerTitle}>{t.changePassword || 'Modifier le mot de passe'}</Text>
           <View style={{ width: 44 }} />
@@ -71,7 +71,7 @@ export function ChangePasswordScreen() {
         <ScrollView contentContainerStyle={{ padding: 20 }}>
           {errorMsg && (
             <View style={styles.errorBanner}>
-              <Ionicons name="alert-circle" size={16} color={BRAND.ERROR} />
+              <AppIcon name="alert-circle" size={16} color={BRAND.ERROR} />
               <Text style={[styles.errorText, { textAlign: isRTL ? 'right' : 'left' }]}>{errorMsg}</Text>
             </View>
           )}
@@ -81,7 +81,7 @@ export function ChangePasswordScreen() {
             {isRTL ? 'كلمة المرور الحالية' : 'Mot de passe actuel'}
           </Text>
           <View style={[styles.inputWrap, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-            <Ionicons name="lock-closed-outline" size={18} color={BRAND.TEXT3} />
+            <AppIcon name="lock-closed-outline" size={18} color={BRAND.TEXT3} />
             <TextInput
               style={[styles.textInput, { textAlign: isRTL ? 'right' : 'left' }]}
               placeholder={isRTL ? 'أدخل كلمة المرور الحالية' : 'Entrez votre mot de passe actuel'}
@@ -98,7 +98,7 @@ export function ChangePasswordScreen() {
             {isRTL ? 'كلمة المرور الجديدة' : 'Nouveau mot de passe'}
           </Text>
           <View style={[styles.inputWrap, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-            <Ionicons name="lock-open-outline" size={18} color={BRAND.TEXT3} />
+            <AppIcon name="lock-open-outline" size={18} color={BRAND.TEXT3} />
             <TextInput
               style={[styles.textInput, { textAlign: isRTL ? 'right' : 'left' }]}
               placeholder={isRTL ? '8 أحرف على الأقل' : 'Au moins 8 caractères'}
@@ -115,7 +115,7 @@ export function ChangePasswordScreen() {
             {isRTL ? 'تأكيد كلمة المرور الجديدة' : 'Confirmer le mot de passe'}
           </Text>
           <View style={[styles.inputWrap, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-            <Ionicons name="shield-checkmark-outline" size={18} color={BRAND.TEXT3} />
+            <AppIcon name="shield-checkmark-outline" size={18} color={BRAND.TEXT3} />
             <TextInput
               style={[styles.textInput, { textAlign: isRTL ? 'right' : 'left' }]}
               placeholder={isRTL ? 'أعد إدخال كلمة المرور' : 'Confirmez le mot de passe'}

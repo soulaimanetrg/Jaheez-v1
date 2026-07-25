@@ -33,6 +33,11 @@ const COPY = {
     maintenance: 'الخدمة غير متاحة مؤقتاً. حاول لاحقاً.',
     orderFailed: 'تعذر إنشاء الطلب. حاول مرة أخرى.',
     loading: 'جارٍ تحميل تفاصيل الطلب...',
+    promoCode: 'كود الخصم',
+    promoPlaceholder: 'أدخل كود الخصم',
+    promoApply: 'تطبيق',
+    promoRemove: 'إزالة',
+    promoInvalid: 'كود الخصم غير صالح أو منتهي.',
   },
   fr: {
     title: 'Confirmer la commande',
@@ -66,6 +71,11 @@ const COPY = {
     maintenance: 'Le service est temporairement indisponible. Réessayez plus tard.',
     orderFailed: 'Impossible de créer la commande. Réessayez.',
     loading: 'Chargement de la commande...',
+    promoCode: 'Code promo',
+    promoPlaceholder: 'Entrez le code promo',
+    promoApply: 'Appliquer',
+    promoRemove: 'Retirer',
+    promoInvalid: 'Code promo invalide ou expiré.',
   },
   en: {
     title: 'Confirm order',
@@ -99,6 +109,11 @@ const COPY = {
     maintenance: 'The service is temporarily unavailable. Try again later.',
     orderFailed: 'The order could not be created. Try again.',
     loading: 'Loading your order...',
+    promoCode: 'Promo code',
+    promoPlaceholder: 'Enter promo code',
+    promoApply: 'Apply',
+    promoRemove: 'Remove',
+    promoInvalid: 'Promo code is invalid or expired.',
   },
 } as const;
 

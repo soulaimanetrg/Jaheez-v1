@@ -4,7 +4,7 @@ import {
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Ionicons } from '@/components/ui/Ionicons';
+import { AppIcon } from '@/components/ui/AppIcon';
 import { BRAND, FONTS, SHADOW_SM } from '../../constants/brand';
 import { useLangStore } from '../../store/languageStore';
 
@@ -115,7 +115,7 @@ export default function TermsScreen() {
       {/* Header */}
       <View style={styles.header}>
         <Pressable style={styles.backBtn} onPress={() => router.canGoBack() ? router.back() : router.replace('/(tabs)/profile')} accessibilityLabel="رجوع">
-          <Ionicons name="arrow-back" size={20} color={BRAND.TEXT} />
+          <AppIcon name="arrow-back" size={20} color={BRAND.TEXT} />
         </Pressable>
         <Text style={styles.headerTitle}>{tabs[tab]}</Text>
         <View style={{ width: 44 }} />
@@ -145,7 +145,7 @@ export default function TermsScreen() {
 
         {/* Contact */}
         <View style={styles.contactCard}>
-          <Ionicons name="mail-outline" size={20} color={BRAND.RED} />
+          <AppIcon name="mail-outline" size={20} color={BRAND.RED} />
           <View style={styles.contactText}>
             <Text style={styles.contactTitle}>تواصل معنا</Text>
             <Text style={styles.contactSub}>support@jaheez.ma</Text>

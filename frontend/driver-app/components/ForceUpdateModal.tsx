@@ -1,3 +1,4 @@
+import { AppIcon } from '@/components/ui/AppIcon';
 import React from 'react';
 import { Modal, View, Text, StyleSheet, Pressable, Platform, Linking } from 'react-native';
 import { CloudDownload } from 'lucide-react-native';
@@ -40,7 +41,7 @@ export function ForceUpdateModal() {
       <View style={styles.overlay}>
         <View style={styles.card}>
           <View style={styles.iconWrap}>
-            <CloudDownload size={42} color={BRAND.RED} />
+            <AppIcon icon={CloudDownload} size={42} color={BRAND.RED} />
           </View>
           <Text style={[styles.title, { textAlign: isAr ? 'right' : 'center' }]}>{title}</Text>
           <Text style={[styles.body, { textAlign: isAr ? 'right' : 'center' }]}>{body}</Text>

@@ -97,7 +97,15 @@ requireRegex('backend/src/features/driver/driver.routes.ts', [
 requireRegex('backend/src/features/order/customerOrder.routes.ts', [
   {
     name: 'checkout requires customer JWT',
-    pattern: /\/v1\/checkout[\s\S]*?verifySupabaseJwt[\s\S]*?validate\(checkoutSchema\)[\s\S]*?controller\.createOrder/,
+    pattern: /\/v1\/checkout[\s\S]*?verifySupabaseJwt[\s\S]*?checkoutCreateLimiter[\s\S]*?validate\(checkoutSchema\)[\s\S]*?controller\.createOrder/,
+  },
+  {
+    name: 'checkout preview requires customer JWT and a dedicated limiter',
+    pattern: /\/v1\/checkout\/preview[\s\S]*?verifySupabaseJwt[\s\S]*?checkoutPreviewLimiter[\s\S]*?validate\(checkoutPreviewSchema\)[\s\S]*?controller\.previewCheckout/,
+  },
+  {
+    name: 'line preview requires customer JWT, limiter, and strict validation',
+    pattern: /\/v1\/checkout\/line-preview[\s\S]*?verifySupabaseJwt[\s\S]*?checkoutLinePreviewLimiter[\s\S]*?validate\(checkoutLinePreviewSchema\)[\s\S]*?controller\.previewLine/,
   },
   {
     name: 'online payment session creation requires customer JWT while provider is paused',

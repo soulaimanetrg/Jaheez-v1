@@ -1,3 +1,4 @@
+import { AppIcon } from '@/components/ui/AppIcon';
 import React from 'react';
 import { View, Text, StyleSheet, Platform } from 'react-native';
 import { AlertTriangle } from 'lucide-react-native';
@@ -17,7 +18,7 @@ export function MaintenanceBanner() {
 
   return (
     <View style={styles.root} accessibilityRole="alert">
-      <AlertTriangle size={16} color="#fff" />
+      <AppIcon icon={AlertTriangle} size={16} color="#fff" />
       <Text style={styles.txt} numberOfLines={2}>{msg}</Text>
     </View>
   );

@@ -138,9 +138,19 @@ export interface Store {
   is_featured: boolean;
   is_jaheez_plus: boolean;
   address: string;
+  address_ar?: string;
   lat: number;
   lng: number;
   opening_hours?: StoreHours[];
+  promo_type?: string | null;
+  has_reduction?: boolean;
+  reduction_percentage?: number | null;
+  store_status?: {
+    is_open: boolean;
+    label_fr: string;
+    label_ar: string;
+    closes_at?: string | null;
+  };
   created_at: string;
 }
 
@@ -177,23 +187,30 @@ export interface MenuItem {
   is_available: boolean;
   is_popular: boolean;
   options?: MenuItemOption[];
+  option_groups?: MenuItemOption[];
+  ordering_available?: boolean;
+  option_configuration_valid?: boolean;
+  rating_avg?: number | null;
+  review_count?: number | null;
   created_at: string;
 }
 
 export interface MenuItemOption {
   id: string;
-  name: string;
-  name_ar: string;
-  choices: MenuItemChoice[];
+  label: string;
+  label_ar: string;
   required: boolean;
+  multiple: boolean;
+  min_selections: number;
   max_selections: number;
+  choices: MenuItemChoice[];
 }
 
 export interface MenuItemChoice {
   id: string;
-  name: string;
-  name_ar: string;
-  price_delta: number;
+  label: string;
+  label_ar: string;
+  price_delta_dh: number;
 }
 
 // ── Cart ──
@@ -237,7 +254,18 @@ export interface CartTotals {
 export interface CheckoutOptionInput {
   option_id: string;
   choice_id: string;
-  choice_name?: string | null;
+}
+
+export interface CheckoutLinePreviewInput {
+  store_id: string;
+  item: CheckoutItemInput;
+}
+
+export interface CheckoutLinePreview {
+  ok: boolean;
+  signature: string;
+  availability: { is_available: boolean; code: 'available' };
+  item: CheckoutQuoteItem;
 }
 
 export interface CheckoutItemInput {
@@ -276,6 +304,7 @@ export interface CheckoutQuote {
     is_open: boolean;
     label_fr: string;
     label_ar: string;
+    closes_at?: string | null;
   };
   items: CheckoutQuoteItem[];
   subtotal_dh: number;
@@ -288,7 +317,6 @@ export interface CheckoutQuote {
     code: string;
     is_valid: boolean;
     discount_dh: number;
-    reason?: string;
   } | null;
 }
 
@@ -676,6 +704,7 @@ export interface ServiceCategory {
 export interface ApiResponse<T> {
   data: T | null;
   error: string | null;
+  error_code?: string | null;
 }
 
 export interface PaginatedResponse<T> {

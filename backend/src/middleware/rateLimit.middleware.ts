@@ -3,6 +3,7 @@ import { RedisStore } from 'rate-limit-redis';
 import { env } from '../config/env';
 import { redis } from '../redis/redis';
 import { logger } from '../config/logger';
+import type { Request } from 'express';
 
 /**
  * Back each limiter with Redis so counters hold across processes/instances
@@ -146,4 +147,27 @@ export const errandOrderLimiter = buildLimiter('errand', {
   windowMs: 10 * 60 * 1000,
   limit: (env.NODE_ENV === 'test' || env.NODE_ENV === 'development') ? 10000 : 5,
   message: { error: 'Trop de demandes de course.', error_code: 'errand_rate_limited' },
+});
+
+const customerRateLimitKey = (req: Request) => req.supabaseUser?.id || req.ip || 'unknown';
+
+export const checkoutPreviewLimiter = buildLimiter('checkout-preview', {
+  windowMs: 60 * 1000,
+  limit: (env.NODE_ENV === 'test' || env.NODE_ENV === 'development') ? 10000 : 60,
+  keyGenerator: customerRateLimitKey,
+  message: { error: 'Trop de mises a jour du panier.', error_code: 'checkout_preview_rate_limited' },
+});
+
+export const checkoutLinePreviewLimiter = buildLimiter('checkout-line-preview', {
+  windowMs: 60 * 1000,
+  limit: (env.NODE_ENV === 'test' || env.NODE_ENV === 'development') ? 10000 : 90,
+  keyGenerator: customerRateLimitKey,
+  message: { error: 'Trop de mises a jour du produit.', error_code: 'checkout_line_preview_rate_limited' },
+});
+
+export const checkoutCreateLimiter = buildLimiter('checkout-create', {
+  windowMs: 10 * 60 * 1000,
+  limit: (env.NODE_ENV === 'test' || env.NODE_ENV === 'development') ? 10000 : 10,
+  keyGenerator: customerRateLimitKey,
+  message: { error: 'Trop de tentatives de commande.', error_code: 'checkout_rate_limited' },
 });

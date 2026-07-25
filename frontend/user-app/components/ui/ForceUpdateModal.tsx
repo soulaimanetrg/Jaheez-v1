@@ -1,6 +1,6 @@
 import React from 'react';
 import { Modal, View, Text, StyleSheet, Pressable, Platform, Linking } from 'react-native';
-import { Ionicons } from '@/components/ui/Ionicons';
+import { AppIcon } from '@/components/ui/AppIcon';
 import { usePlatformStore } from '../../store/platformStore';
 import { useLangStore } from '../../store/languageStore';
 import { BRAND, FONTS } from '../../constants/brand';
@@ -45,7 +45,7 @@ export function ForceUpdateModal() {
       <View style={styles.overlay}>
         <View style={styles.card}>
           <View style={styles.iconWrap}>
-            <Ionicons name="cloud-download" size={42} color={BRAND.RED} />
+            <AppIcon name="cloud-download" size={42} color={BRAND.RED} />
           </View>
           <Text style={[styles.title, { textAlign: isAr ? 'right' : 'center' }]}>{title}</Text>
           <Text style={[styles.body, { textAlign: isAr ? 'right' : 'center' }]}>{body}</Text>

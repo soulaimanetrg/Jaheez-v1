@@ -31,9 +31,10 @@ vi.mock('../features/order/orderLifecycle.service', () => ({
 }));
 
 const mockRequireOrderReady = vi.fn().mockResolvedValue(undefined);
+const mockRequireActiveCustomer = vi.fn().mockResolvedValue({ id: 'user-1', role: 'user' });
 vi.mock('../features/auth/customerTrust.service', () => ({
   CustomerTrustService: vi.fn().mockImplementation(function() {
-    return { requireOrderReady: mockRequireOrderReady };
+    return { requireOrderReady: mockRequireOrderReady, requireActiveCustomer: mockRequireActiveCustomer };
   }),
 }));
 
@@ -84,6 +85,65 @@ describe('CheckoutService', () => {
     mockCheckoutRepo.recordPromoUserUsage.mockResolvedValue(undefined);
     mockCheckoutRepo.getOrderForCustomerCancellation.mockResolvedValue({id:'order-1',user_id:'user-1',order_type:'standard',driver_id:null,status:'pending'});
     service = new CheckoutService();
+  });
+
+  describe('previewCheckout', () => {
+    it('requires an active customer before querying store or price data', async () => {
+      mockRequireActiveCustomer.mockRejectedValueOnce(new Error('account_disabled'));
+      await expect(service.previewCheckout('driver-1', validPayload)).rejects.toThrow(/account_disabled/);
+      expect(mockCheckoutRepo.getStoreById).not.toHaveBeenCalled();
+    });
+
+    it('rejects repeated choices for a single-select option group', async () => {
+      mockCheckoutRepo.getStoreById.mockResolvedValue(mockStore);
+      mockCheckoutRepo.getMenuItemsByIds.mockResolvedValue([{
+        ...mockMenuItem,
+        options: [{ id: 'size', required: true, multiple: false, options: [
+          { id: 'small', price_delta: 0 },
+          { id: 'large', price_delta: 5 },
+        ] }],
+      }]);
+      await expect(service.previewCheckout('user-1', {
+        ...validPayload,
+        items: [{ menu_item_id: 'item-1', quantity: 1, options: [
+          { option_id: 'size', choice_id: 'small' },
+          { option_id: 'size', choice_id: 'large' },
+        ] }],
+      })).rejects.toThrow(/Too many choices/);
+    });
+
+    it('fails closed when stored option pricing is negative', async () => {
+      mockCheckoutRepo.getStoreById.mockResolvedValue(mockStore);
+      mockCheckoutRepo.getMenuItemsByIds.mockResolvedValue([{
+        ...mockMenuItem,
+        options: [{ id: 'extra', required: false, multiple: true, options: [{ id: 'bad', price_delta: -500 }] }],
+      }]);
+      await expect(service.previewCheckout('user-1', {
+        ...validPayload,
+        items: [{ menu_item_id: 'item-1', quantity: 1, options: [{ option_id: 'extra', choice_id: 'bad' }] }],
+      })).rejects.toThrow(/pricing is unavailable/);
+    });
+  });
+
+  describe('previewLine', () => {
+    it('returns an authoritative signature and normalized server prices', async () => {
+      mockCheckoutRepo.getMenuItemsByIds.mockResolvedValue([{
+        ...mockMenuItem,
+        options: [{
+          id: 'extras', label: 'Extras', required: false, multiple: true,
+          min_selections: 0, max_selections: 1,
+          choices: [{ id: 'cheese', label: 'Cheese', price_delta_dh: 7 }],
+        }],
+      }]);
+      const result = await service.previewLine('user-1', {
+        store_id: 'store-1',
+        item: { menu_item_id: 'item-1', quantity: 2, options: [{ option_id: 'extras', choice_id: 'cheese' }] },
+      });
+      expect(result.signature).toBe('item-1|2|extras:cheese');
+      expect(result.item.unit_price_dh).toBe(57);
+      expect(result.item.line_total_dh).toBe(114);
+      expect(mockRequireActiveCustomer).toHaveBeenCalledWith('user-1');
+    });
   });
 
   describe('processCheckout', () => {

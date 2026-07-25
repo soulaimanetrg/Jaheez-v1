@@ -1,3 +1,4 @@
+import { AppIcon } from '@/components/ui/AppIcon';
 import { Tabs } from 'expo-router';
 import { Home, User } from 'lucide-react-native';
 import { BRAND, FONTS } from '../../constants/brand';
@@ -15,8 +16,8 @@ export default function TabsLayout() {
         tabBarLabelStyle: { fontFamily: FONTS.SEMIBOLD, fontSize: 11 },
       }}
     >
-      <Tabs.Screen name="index"    options={{ title: t.dashboard, tabBarIcon: ({ color }) => <Home size={22} color={color} /> }} />
-      <Tabs.Screen name="profile"  options={{ title: t.profile,   tabBarIcon: ({ color }) => <User size={22} color={color} /> }} />
+      <Tabs.Screen name="index" options={{ title: t.dashboard, tabBarIcon: ({ color, focused }) => <AppIcon icon={Home} size={22} color={color} active={focused} /> }} />
+      <Tabs.Screen name="profile" options={{ title: t.profile, tabBarIcon: ({ color, focused }) => <AppIcon icon={User} size={22} color={color} active={focused} /> }} />
     </Tabs>
   );
 }

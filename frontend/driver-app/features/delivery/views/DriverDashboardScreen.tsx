@@ -1,3 +1,4 @@
+import { AppIcon } from '@/components/ui/AppIcon';
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { View, Text, Pressable, ScrollView, RefreshControl, ActivityIndicator, Modal, Linking } from 'react-native';
 import { useRouter } from 'expo-router';
@@ -235,7 +236,7 @@ export function DriverDashboardScreen() {
           <View style={{ paddingTop: 60, alignItems: 'center' }}><ActivityIndicator color={BRAND.RED} /></View>
         ) : orders.length === 0 ? (
           <View style={{ paddingTop: 60, alignItems: 'center', gap: 8 }}>
-            <Package size={48} color={BRAND.TEXT3} />
+            <AppIcon icon={Package} size={48} color={BRAND.TEXT3} />
             <Text style={{ fontFamily: FONTS.SEMIBOLD, fontSize: 16, color: BRAND.TEXT2 }}>{t.noOrders}</Text>
             <Text style={{ fontFamily: FONTS.BODY, fontSize: 13, color: BRAND.TEXT3 }}>{t.noOrdersSub}</Text>
           </View>
@@ -353,12 +354,12 @@ function AcceptCountdownModal({ order, busy, navigationBusy, t, onNavigatePickup
         <View style={{ backgroundColor: BRAND.SURFACE, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, paddingBottom: 32 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-              <Clock size={18} color={BRAND.RED} />
+              <AppIcon icon={Clock} size={18} color={BRAND.RED} />
               <Text style={{ fontFamily: FONTS.DISPLAY, fontSize: 18, color: BRAND.TEXT }}>Nouvelle course</Text>
             </View>
             <Pressable onPress={onDecline} hitSlop={10}
               style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: BRAND.LIGHT, alignItems: 'center', justifyContent: 'center' }}>
-              <X size={16} color={BRAND.TEXT2} />
+              <AppIcon icon={X} size={16} color={BRAND.TEXT2} />
             </Pressable>
           </View>
 
@@ -373,7 +374,7 @@ function AcceptCountdownModal({ order, busy, navigationBusy, t, onNavigatePickup
           {/* Pickup navigation */}
           <Pressable onPress={onNavigatePickup} disabled={navigationBusy}
             style={{ flexDirection: 'row', gap: 8, marginBottom: 14, padding: 12, backgroundColor: BRAND.BG, borderRadius: 12, opacity: navigationBusy ? 0.65 : 1 }}>
-            <MapPin size={16} color={BRAND.RED} style={{ marginTop: 2 }} />
+            <AppIcon icon={MapPin} size={16} color={BRAND.RED} style={{ marginTop: 2 }} />
             <View style={{ flex: 1 }}>
               <Text style={{ fontFamily: FONTS.SEMIBOLD, fontSize: 11, color: BRAND.TEXT3, marginBottom: 2 }}>
                 {lang === 'ar' ? 'نقطة الاستلام' : (lang === 'en' ? 'Pickup' : 'Point de retrait')}
@@ -454,7 +455,7 @@ function OrderCard({ order, tab, t, busy, navigationBusy, disabled, onClaim, onN
           <Text style={{ fontFamily: FONTS.SEMIBOLD, fontSize: 11, color: BRAND.TEXT3 }}>#{order.id.slice(0, 8)}</Text>
           {!!timeStr && (
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
-              <Clock size={10} color={BRAND.TEXT3} />
+              <AppIcon icon={Clock} size={10} color={BRAND.TEXT3} />
               <Text style={{ fontFamily: FONTS.BODY, fontSize: 10, color: BRAND.TEXT3 }}>{timeStr}</Text>
             </View>
           )}
@@ -476,7 +477,7 @@ function OrderCard({ order, tab, t, busy, navigationBusy, disabled, onClaim, onN
       {/* Store name */}
       {!!storeName && (
         <View style={{ flexDirection: 'row', gap: 8, marginBottom: 6 }}>
-          <Package size={14} color={BRAND.GREEN} style={{ marginTop: 2 }} />
+          <AppIcon icon={Package} size={14} color={BRAND.GREEN} style={{ marginTop: 2 }} />
           <Text style={{ flex: 1, fontFamily: FONTS.SEMIBOLD, fontSize: 14, color: BRAND.TEXT }} numberOfLines={1}>{storeName}</Text>
         </View>
       )}
@@ -484,7 +485,7 @@ function OrderCard({ order, tab, t, busy, navigationBusy, disabled, onClaim, onN
       {/* Navigation address */}
       <Pressable onPress={onNavigate} disabled={navigationBusy}
         style={{ flexDirection: 'row', gap: 8, marginBottom: 6, opacity: navigationBusy ? 0.65 : 1 }}>
-        <MapPin size={14} color={BRAND.RED} style={{ marginTop: 2 }} />
+        <AppIcon icon={MapPin} size={14} color={BRAND.RED} style={{ marginTop: 2 }} />
         <View style={{ flex: 1 }}>
           <Text style={{ fontFamily: FONTS.SEMIBOLD, fontSize: 10, color: BRAND.TEXT3, marginBottom: 1 }}>
             {navigationLabel}
@@ -505,7 +506,7 @@ function OrderCard({ order, tab, t, busy, navigationBusy, disabled, onClaim, onN
         )}
         {itemCount > 0 && (
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: BRAND.LIGHT, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 999 }}>
-            <Package size={11} color={BRAND.TEXT3} />
+            <AppIcon icon={Package} size={11} color={BRAND.TEXT3} />
             <Text style={{ fontFamily: FONTS.SEMIBOLD, fontSize: 11, color: BRAND.TEXT2 }}>
               {itemCount} {lang === 'ar' ? 'عنصر' : (lang === 'en' ? (itemCount === 1 ? 'item' : 'items') : (itemCount === 1 ? 'article' : 'articles'))}
             </Text>
@@ -523,7 +524,7 @@ function OrderCard({ order, tab, t, busy, navigationBusy, disabled, onClaim, onN
       {/* Cancelled reason (for history) */}
       {order.status === 'cancelled' && !!order.cancelled_reason && (
         <View style={{ flexDirection: 'row', gap: 6, marginBottom: 4, padding: 8, backgroundColor: '#FEF2F2', borderRadius: 8 }}>
-          <AlertCircle size={13} color={BRAND.ERROR} style={{ marginTop: 1 }} />
+          <AppIcon icon={AlertCircle} size={13} color={BRAND.ERROR} style={{ marginTop: 1 }} />
           <Text style={{ flex: 1, fontFamily: FONTS.BODY, fontSize: 11, color: BRAND.ERROR }} numberOfLines={2}>
             {order.cancelled_reason}
           </Text>

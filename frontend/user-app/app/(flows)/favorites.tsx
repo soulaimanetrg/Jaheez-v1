@@ -17,7 +17,8 @@ import { MotiView } from 'moti';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Ionicons } from '@/components/ui/Ionicons';
+import { AppIcon } from '@/components/ui/AppIcon';
+import { FavoriteButton } from '@/components/ui/FavoriteButton';
 import AnimatedPressable from '@/components/ui/AnimatedPressable';
 import { TText } from '@/components/ui/TText';
 import { BRAND, FONTS, RADIUS, SPACE } from '../../constants/brand';
@@ -194,7 +195,7 @@ export default function FavoritesScreen() {
           accessibilityLabel={t.back}
           accessibilityRole="button"
         >
-          <Ionicons name={backArrow(isRTL)} size={22} color={BRAND.TEXT} />
+          <AppIcon name={backArrow(isRTL)} size={22} color={BRAND.TEXT} />
         </Pressable>
 
         <View style={styles.fixedHeaderCenter}>
@@ -337,7 +338,7 @@ function EmptyState({ icon, title }: { icon: string; title: string }) {
       transition={{ type: 'timing' as any, duration: 350 }}
       style={styles.emptyState}
     >
-      <Ionicons name={icon as any} size={64} color={BRAND.TEXT3} />
+      <AppIcon name={icon} size={64} color={BRAND.TEXT3} />
       <Text style={styles.emptyTitle}>{title}</Text>
     </MotiView>
   );
@@ -390,7 +391,7 @@ function FavoriteStoreRow({
             />
           ) : (
             <View style={[styles.image, styles.imagePlaceholder]}>
-              <Ionicons name="storefront-outline" size={24} color={BRAND.TEXT3} />
+              <AppIcon name="storefront-outline" size={24} color={BRAND.TEXT3} />
             </View>
           )}
           {/* Promo Floating Badge */}
@@ -399,7 +400,7 @@ function FavoriteStoreRow({
               styles.promoBadgeFloatingFav,
               isRTL ? { right: 4 } : { left: 4 },
             ]}>
-              <Ionicons name="pricetag" size={8} color="#FFFFFF" style={isRTL ? { marginLeft: 2 } : { marginRight: 2 }} />
+              <AppIcon name="pricetag" size={8} color="#FFFFFF" style={isRTL ? { marginLeft: 2 } : { marginRight: 2 }} />
               <Text style={styles.promoBadgeTextFav}>
                 {fav.promo_type === 'store_percentage'
                   ? `-${fav.reduction_percentage}%`
@@ -415,21 +416,21 @@ function FavoriteStoreRow({
           <View style={[styles.metaRow, { flexDirection: dirRow(isRTL) }]}>
             {fav.rating ? (
               <>
-                <Ionicons name="star" size={14} color={BRAND.YELLOW_DARK} />
+                <AppIcon name="star" size={14} color={BRAND.YELLOW_DARK} />
                 <Text style={styles.metaText}>{fav.rating}</Text>
               </>
             ) : null}
             {fav.rating && fav.time ? <View style={styles.dot} /> : null}
             {fav.time ? (
               <>
-                <Ionicons name="time-outline" size={14} color={BRAND.TEXT3} />
+                <AppIcon name="time-outline" size={14} color={BRAND.TEXT3} />
                 <Text style={styles.metaText}>{fav.time} {minutesLabel}</Text>
               </>
             ) : null}
             {(fav.rating || fav.time) && fav.fee ? <View style={styles.dot} /> : null}
             {fav.fee ? (
               <>
-                <Ionicons name="bicycle-outline" size={14} color={BRAND.TEXT3} />
+                <AppIcon name="bicycle-outline" size={14} color={BRAND.TEXT3} />
                 <Text style={styles.metaText}>{fav.fee}</Text>
               </>
             ) : null}
@@ -441,7 +442,7 @@ function FavoriteStoreRow({
         onPress={handleRemove}
         accessibilityLabel={removeLabel}
       >
-        <Ionicons name="heart" size={26} color={BRAND.RED} />
+        <AppIcon name="heart" size={26} color={BRAND.RED} />
       </AnimatedPressable>
     </Animated.View>
   );
@@ -499,14 +500,18 @@ function FavoriteProductRow({
             />
           ) : (
             <View style={[styles.image, styles.imagePlaceholder]}>
-              <Ionicons name="image" size={24} color={BRAND.TEXT3} />
+              <AppIcon name="image" size={24} color={BRAND.TEXT3} />
             </View>
           )}
         </View>
-        <View style={[styles.info, { alignItems: dirItems(isRTL) }]}>
-          <Text style={[styles.name, { textAlign: isRTL ? 'right' : 'left' }]} numberOfLines={1}>{name}</Text>
+        <View style={[styles.info, { alignItems: isRTL ? 'flex-end' : 'flex-start' }]}>
+          <Text style={[styles.name, { textAlign: isRTL ? 'right' : 'left' }]} numberOfLines={1}>
+            {name}
+          </Text>
           {desc ? (
-            <Text style={[styles.description, { textAlign: isRTL ? 'right' : 'left' }]} numberOfLines={1}>{desc}</Text>
+            <Text style={[styles.description, { textAlign: isRTL ? 'right' : 'left' }]} numberOfLines={1}>
+              {desc}
+            </Text>
           ) : null}
           {hasPrice ? (
             <Text style={[styles.productPrice, { textAlign: isRTL ? 'right' : 'left' }]}>
@@ -515,13 +520,12 @@ function FavoriteProductRow({
           ) : null}
         </View>
       </AnimatedPressable>
-      <AnimatedPressable
+      <FavoriteButton
+        isFavorite={true}
+        onToggle={handleRemove}
+        size={24}
         style={styles.heartBtn}
-        onPress={handleRemove}
-        accessibilityLabel={removeLabel}
-      >
-        <Ionicons name="heart" size={26} color={BRAND.RED} />
-      </AnimatedPressable>
+      />
     </Animated.View>
   );
 }

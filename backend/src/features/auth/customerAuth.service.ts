@@ -1,5 +1,15 @@
+import crypto from 'crypto';
+import { env } from '../../config/env';
 import { CustomerAuthRepository } from './customerAuth.repository';
-import { ConflictError, ForbiddenError, GoneError, UnauthorizedError } from '../../middleware/error.middleware';
+import {
+  ConflictError,
+  ForbiddenError,
+  GoneError,
+  InternalServerError,
+  TooManyRequestsError,
+  UnauthorizedError,
+} from '../../middleware/error.middleware';
+import { sendCustomerRegistrationOtp, type CustomerRegistrationIdentifierType } from './customerRegistrationOtpSender';
 
 function normalizeMoroccanPhone(value: string): string {
   const digits = String(value || '').replace(/\D/g, '');
@@ -13,65 +23,324 @@ function sessionDto(data: any) {
   return session ? { access_token: session.access_token, refresh_token: session.refresh_token, expires_at: session.expires_at } : null;
 }
 
+type RegistrationIdentifier = { type: CustomerRegistrationIdentifierType; value: string };
+type RegistrationContext = { ip: string };
+type AuthContinuationKind = 'password_challenge' | 'registration_otp_challenge' | 'registration_proof';
+type AuthContinuationToken = {
+  version: 1;
+  kind: AuthContinuationKind;
+  expiresAt: number;
+  identifierType: CustomerRegistrationIdentifierType;
+  identifier: string;
+  deviceHash: string;
+  challengeId?: string;
+  nonce?: string;
+};
+
+const registrationSecret = () => env.OTP_HASH_SECRET || env.ADMIN_JWT_SECRET;
+const secureHash = (value: string) => crypto.createHmac('sha256', registrationSecret()).update(value).digest('hex');
+const safeHexEqual = (left: string, right: string) => {
+  const a = Buffer.from(left, 'hex');
+  const b = Buffer.from(right, 'hex');
+  return a.length === b.length && crypto.timingSafeEqual(a, b);
+};
+
+function registrationIdentifier(payload: { phone?: string; email?: string }): RegistrationIdentifier {
+  if (payload.phone) return { type: 'phone', value: normalizeMoroccanPhone(payload.phone) };
+  return { type: 'email', value: String(payload.email || '').trim().toLowerCase() };
+}
+
+function continuationEncryptionKey(): Buffer {
+  return Buffer.from(crypto.hkdfSync(
+    'sha256',
+    Buffer.from(registrationSecret(), 'utf8'),
+    Buffer.alloc(0),
+    Buffer.from('jaheez-customer-auth-continuation-v1', 'utf8'),
+    32,
+  ));
+}
+
+function sealAuthContinuation(payload: AuthContinuationToken): string {
+  const iv = crypto.randomBytes(12);
+  const cipher = crypto.createCipheriv('aes-256-gcm', continuationEncryptionKey(), iv);
+  const ciphertext = Buffer.concat([
+    cipher.update(JSON.stringify(payload), 'utf8'),
+    cipher.final(),
+  ]);
+  const tag = cipher.getAuthTag();
+  return [iv, tag, ciphertext].map(part => part.toString('base64url')).join('.');
+}
+
+function openAuthContinuation(token: string, expectedKind: AuthContinuationKind): AuthContinuationToken {
+  try {
+    const parts = token.split('.');
+    if (parts.length !== 3) throw new Error('invalid');
+    const [ivPart, tagPart, ciphertextPart] = parts;
+    const decipher = crypto.createDecipheriv(
+      'aes-256-gcm',
+      continuationEncryptionKey(),
+      Buffer.from(ivPart, 'base64url'),
+    );
+    decipher.setAuthTag(Buffer.from(tagPart, 'base64url'));
+    const plaintext = Buffer.concat([
+      decipher.update(Buffer.from(ciphertextPart, 'base64url')),
+      decipher.final(),
+    ]).toString('utf8');
+    const decoded = JSON.parse(plaintext) as AuthContinuationToken;
+    if (
+      decoded.version !== 1 || decoded.kind !== expectedKind || !decoded.identifier ||
+      !decoded.deviceHash || !['email', 'phone'].includes(decoded.identifierType) ||
+      !Number.isFinite(decoded.expiresAt) || decoded.expiresAt <= Date.now()
+    ) throw new Error('invalid');
+    return decoded;
+  } catch {
+    throw new UnauthorizedError('Authentication challenge is invalid or expired.', 'auth_challenge_invalid');
+  }
+}
+
 export class CustomerAuthService {
   private repo = new CustomerAuthRepository();
 
-  async customerRegister(payload: any) {
-    if (['password123','1234567890','qwerty1234','azerty1234','motdepasse','jaheez1234'].includes(String(payload.password).toLowerCase())) throw new ForbiddenError('Choose a stronger password.', 'weak_password');
-    const phone = payload.phone ? normalizeMoroccanPhone(payload.phone) : null;
-    const email = payload.email ? String(payload.email).trim().toLowerCase() : null;
-    try {
-      const metadata = {
-        full_name: payload.full_name.trim(), language: payload.language,
-        legal_consent_version: payload.legal_consent_version,
-      };
-      if (phone) await this.repo.createPasswordCustomer(phone, payload.password, metadata);
-      else await this.repo.createEmailPasswordCustomer(email!, payload.password, metadata);
-      const session = sessionDto(phone
-        ? await this.repo.signInCustomer(phone, payload.password)
-        : await this.repo.signInEmailCustomer(email!, payload.password));
-      if (!session) throw new Error('missing session');
-      return { phone, email, requires_verification: false, session };
-    } catch (error: any) {
-      if (/already|registered|exists|unique/i.test(String(error?.message || ''))) {
-        throw new ConflictError('Unable to create account. Sign in or recover access.', 'account_unavailable');
-      }
-      throw new ForbiddenError('Unable to create account.', 'registration_failed');
+  private async ensureRegistrationDelivery(type: CustomerRegistrationIdentifierType): Promise<void> {
+    if (env.OTP_DELIVERY_FROZEN || env.OUTBOUND_INTEGRATIONS_DISABLED) {
+      throw new ForbiddenError('Verification is temporarily unavailable.', 'verification_delivery_unavailable');
     }
-  }
-  async customerLogin(payload: any) {
-    try {
-      const session = sessionDto(payload.phone
-        ? await this.repo.signInCustomer(normalizeMoroccanPhone(payload.phone), payload.password)
-        : await this.repo.signInEmailCustomer(String(payload.email).trim().toLowerCase(), payload.password));
-      if (!session) throw new Error('missing session');
-      return { session };
-    } catch {
-      throw new UnauthorizedError('Phone or password is incorrect.', 'invalid_credentials');
+    const key = type === 'email' ? 'feature_customer_email_otp_enabled' : 'feature_customer_whatsapp_otp_enabled';
+    const settings = await this.repo.getSettings([key]);
+    if (settings[key] !== 'true' || (type === 'email' && !env.RESEND_API_KEY)) {
+      throw new ForbiddenError('Verification is temporarily unavailable.', 'verification_delivery_unavailable');
     }
   }
 
-  async verifyCustomerRegistration(payload: any) {
+  private checkedDevice(token: AuthContinuationToken, deviceId: string): void {
+    const deviceHash = secureHash(`device:${deviceId}`);
+    if (!safeHexEqual(token.deviceHash, deviceHash)) {
+      throw new UnauthorizedError('Authentication challenge is invalid or expired.', 'auth_challenge_invalid');
+    }
+  }
+
+  private async checkedRegistrationChallenge(token: AuthContinuationToken, deviceId: string) {
+    if (!token.challengeId) {
+      throw new UnauthorizedError('Verification challenge is invalid or expired.', 'registration_challenge_invalid');
+    }
+    const challenge = await this.repo.findRegistrationChallenge(token.challengeId);
+    const deviceHash = secureHash(`device:${deviceId}`);
+    const identifierHash = secureHash(`identifier:${token.identifierType}:${token.identifier}`);
+    if (
+      !challenge || challenge.consumed_at || challenge.identifier_type !== token.identifierType ||
+      !safeHexEqual(challenge.identifier_hash, identifierHash) ||
+      !safeHexEqual(challenge.device_hash, deviceHash) ||
+      !safeHexEqual(token.deviceHash, deviceHash) ||
+      new Date(challenge.expires_at).getTime() <= Date.now()
+    ) {
+      throw new UnauthorizedError('Verification challenge is invalid or expired.', 'registration_challenge_invalid');
+    }
+    return challenge;
+  }
+
+  async continueCustomerAuth(
+    payload: { phone?: string; email?: string; device_id: string },
+    context: { ip: string },
+  ) {
+    const identifier = registrationIdentifier(payload);
+    const identifierHash = secureHash(`identifier:${identifier.type}:${identifier.value}`);
+    const deviceHash = secureHash(`device:${payload.device_id}`);
+    const ipHash = secureHash(`ip:${context.ip}`);
+    const since = new Date(Date.now() - 60 * 60_000).toISOString();
+    await this.repo.cleanupAuthContinuationAttempts();
+    const counts = await this.repo.countRecentAuthContinuationAttempts(identifierHash, deviceHash, ipHash, since);
+    if (counts.identifier >= 5 || counts.device >= 10 || counts.ip >= 20) {
+      throw new TooManyRequestsError('Too many authentication attempts. Try again later.', 'auth_continuation_rate_limited');
+    }
+    await this.repo.recordAuthContinuationAttempt(identifierHash, deviceHash, ipHash);
+
+    const exists = await this.repo.customerAuthIdentifierExists(identifier.type, identifier.value);
+    if (exists) {
+      return {
+        continuation: 'password_challenge' as const,
+        continuation_token: sealAuthContinuation({
+          version: 1,
+          kind: 'password_challenge',
+          expiresAt: Date.now() + 10 * 60_000,
+          identifierType: identifier.type,
+          identifier: identifier.value,
+          deviceHash,
+        }),
+      };
+    }
+
+    return this.startCustomerRegistration(identifier, payload.device_id, context);
+  }
+
+  private async startCustomerRegistration(
+    identifier: RegistrationIdentifier,
+    deviceId: string,
+    context: { ip: string },
+  ) {
+    await this.ensureRegistrationDelivery(identifier.type);
+    await this.repo.cleanupRegistrationChallenges();
+    const id = crypto.randomUUID();
+    const code = crypto.randomInt(0, 1_000_000).toString().padStart(6, '0');
+    const identifierHash = secureHash(`identifier:${identifier.type}:${identifier.value}`);
+    const deviceHash = secureHash(`device:${deviceId}`);
+    const ipHash = secureHash(`ip:${context.ip}`);
+    const since = new Date(Date.now() - 60 * 60_000).toISOString();
+    const counts = await this.repo.countRecentRegistrationChallenges(identifierHash, deviceHash, ipHash, since);
+    if (counts.identifier >= 5 || counts.device >= 10 || counts.ip >= 20) {
+      throw new TooManyRequestsError('Too many verification attempts. Try again later.', 'registration_rate_limited');
+    }
+
+    const now = Date.now();
+    await this.repo.createRegistrationChallenge({
+      id,
+      identifier_type: identifier.type,
+      identifier_hash: identifierHash,
+      code_hash: secureHash(`otp:${id}:${code}`),
+      proof_hash: null,
+      provider_status: 'pending',
+      attempts: 0,
+      resend_available_at: new Date(now + 60_000).toISOString(),
+      expires_at: new Date(now + 10 * 60_000).toISOString(),
+      verified_at: null,
+      consumed_at: null,
+      locked_until: null,
+      device_hash: deviceHash,
+      ip_hash: ipHash,
+    });
+
     try {
-      const session = sessionDto(await this.repo.verifyCustomerSignup(normalizeMoroccanPhone(payload.phone), payload.code));
-      if (!session) throw new Error('missing session');
-      return { session };
+      await sendCustomerRegistrationOtp(identifier.type, identifier.value, code);
+      await this.repo.updateRegistrationChallenge(id, { provider_status: 'sent' });
     } catch {
+      await this.repo.updateRegistrationChallenge(id, { provider_status: 'failed' }).catch(() => undefined);
+      throw new ForbiddenError('Verification is temporarily unavailable.', 'verification_delivery_unavailable');
+    }
+
+    const challengeToken = sealAuthContinuation({
+      version: 1,
+      kind: 'registration_otp_challenge',
+      expiresAt: Date.now() + 10 * 60_000,
+      challengeId: id,
+      identifierType: identifier.type,
+      identifier: identifier.value,
+      deviceHash,
+    });
+    return {
+      continuation: 'registration_otp_challenge' as const,
+      challenge_token: challengeToken,
+      resend_after_seconds: 60,
+    };
+  }
+
+  async verifyCustomerRegistrationOtp(payload: { challenge_token: string; code: string; device_id: string }) {
+    const token = openAuthContinuation(payload.challenge_token, 'registration_otp_challenge');
+    const challenge = await this.checkedRegistrationChallenge(token, payload.device_id);
+    if (
+      challenge.provider_status !== 'sent' || challenge.verified_at || challenge.attempts >= 5 ||
+      (challenge.locked_until && new Date(challenge.locked_until).getTime() > Date.now())
+    ) throw new UnauthorizedError('The verification code is invalid or expired.', 'invalid_verification_code');
+
+    const candidateHash = secureHash(`otp:${challenge.id}:${payload.code}`);
+    const nonce = crypto.randomBytes(32).toString('hex');
+    const proofHash = secureHash(`proof:${challenge.id}:${nonce}`);
+    if (!await this.repo.verifyRegistrationCode(challenge.id, candidateHash, proofHash)) {
       throw new UnauthorizedError('The verification code is invalid or expired.', 'invalid_verification_code');
     }
+    const registrationProof = sealAuthContinuation({
+      version: 1,
+      kind: 'registration_proof',
+      expiresAt: Date.now() + 10 * 60_000,
+      challengeId: challenge.id,
+      identifierType: token.identifierType,
+      identifier: token.identifier,
+      deviceHash: token.deviceHash,
+      nonce,
+    });
+    return { verified: true, registration_proof: registrationProof };
   }
 
-  async resendCustomerRegistration(payload: any) {
-    try { await this.repo.resendCustomerSignup(normalizeMoroccanPhone(payload.phone)); } catch { throw new ForbiddenError('WhatsApp verification is temporarily unavailable.', 'verification_delivery_unavailable'); }
-    return { accepted: true };
+  async resendCustomerRegistrationOtp(payload: { challenge_token: string; device_id: string }) {
+    const token = openAuthContinuation(payload.challenge_token, 'registration_otp_challenge');
+    const challenge = await this.checkedRegistrationChallenge(token, payload.device_id);
+    await this.ensureRegistrationDelivery(token.identifierType);
+    const now = Date.now();
+    if (challenge.verified_at || new Date(challenge.resend_available_at).getTime() > now) {
+      throw new TooManyRequestsError('Please wait before requesting another code.', 'registration_resend_too_soon');
+    }
+    const code = crypto.randomInt(0, 1_000_000).toString().padStart(6, '0');
+    const prepared = await this.repo.prepareRegistrationResend(
+      challenge.id,
+      secureHash(`otp:${challenge.id}:${code}`),
+      new Date(now + 60_000).toISOString(),
+    );
+    if (!prepared) throw new TooManyRequestsError('Please wait before requesting another code.', 'registration_resend_too_soon');
+    try {
+      await sendCustomerRegistrationOtp(token.identifierType, token.identifier, code);
+      await this.repo.updateRegistrationChallenge(challenge.id, { provider_status: 'sent' });
+    } catch {
+      await this.repo.updateRegistrationChallenge(challenge.id, { provider_status: 'failed' }).catch(() => undefined);
+      throw new ForbiddenError('Verification is temporarily unavailable.', 'verification_delivery_unavailable');
+    }
+    return { accepted: true, resend_after_seconds: 60 };
   }
 
-  async requestCustomerRecovery(payload: any) {
-    try { await this.repo.requestCustomerRecovery(normalizeMoroccanPhone(payload.phone)); } catch { /* Generic response prevents account discovery. */ }
-    return { accepted: true };
+  async customerRegister(payload: {
+    registration_proof: string;
+    device_id: string;
+    password: string;
+    full_name: string;
+    language: 'ar' | 'fr' | 'en';
+    legal_consent_version: string;
+  }, context: RegistrationContext) {
+    if (['password123','1234567890','qwerty1234','azerty1234','motdepasse','jaheez1234'].includes(String(payload.password).toLowerCase())) throw new ForbiddenError('Choose a stronger password.', 'weak_password');
+    const token = openAuthContinuation(payload.registration_proof, 'registration_proof');
+    if (!token.nonce || !token.challengeId) throw new UnauthorizedError('Registration proof is invalid or expired.', 'registration_proof_invalid');
+    await this.checkedRegistrationChallenge(token, payload.device_id);
+    const proofHash = secureHash(`proof:${token.challengeId}:${token.nonce}`);
+    if (!await this.repo.consumeRegistrationChallenge(token.challengeId, proofHash)) {
+      throw new UnauthorizedError('Registration proof is invalid or expired.', 'registration_proof_invalid');
+    }
+    const phone = token.identifierType === 'phone' ? token.identifier : null;
+    const email = token.identifierType === 'email' ? token.identifier : null;
+    const metadata = {
+      full_name: payload.full_name.trim(), language: payload.language,
+      legal_consent_version: payload.legal_consent_version,
+    };
+    try {
+      if (phone) await this.repo.createPasswordCustomer(phone, payload.password, metadata);
+      else await this.repo.createEmailPasswordCustomer(email!, payload.password, metadata);
+    } catch {
+      throw new ConflictError('Unable to create account. Sign in or recover access.', 'account_unavailable');
+    }
+    const session = sessionDto(phone
+      ? await this.repo.signInCustomer(phone, payload.password)
+      : await this.repo.signInEmailCustomer(email!, payload.password));
+    if (!session) throw new InternalServerError('Unable to establish the customer session.', 'session_creation_failed');
+    await this.repo.writeAuditLog({
+      admin_id: null,
+      admin_email: null,
+      action: 'customer_registration_complete',
+      entity_type: 'customer_auth',
+      entity_id: null,
+      summary: 'Customer completed OTP-verified registration',
+      new_value: { identifier_type: token.identifierType },
+      ip: context.ip,
+    });
+    return { session };
   }
-
-  async verifyCustomerRecovery(payload: any) { return this.verifyCustomerRegistration(payload); }
+  async customerLogin(payload: { continuation_token: string; device_id: string; password: string }) {
+    try {
+      const token = openAuthContinuation(payload.continuation_token, 'password_challenge');
+      this.checkedDevice(token, payload.device_id);
+      const session = sessionDto(token.identifierType === 'phone'
+        ? await this.repo.signInCustomer(token.identifier, payload.password)
+        : await this.repo.signInEmailCustomer(token.identifier, payload.password));
+      if (!session) throw new Error('missing session');
+      return { session };
+    } catch {
+      throw new UnauthorizedError('Invalid credentials.', 'invalid_credentials');
+    }
+  }
 
   async bootstrapCustomer(authUser: any, payload: any) {
     const existing = await this.repo.findCustomerProfileById(authUser.id);

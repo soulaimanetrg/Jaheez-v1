@@ -5,7 +5,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Ionicons } from '@expo/vector-icons';
+import { AppIcon } from '@/components/ui/AppIcon';
 import { MotiView } from 'moti';
 import {
   BRAND, FONTS, GRADIENTS, RADIUS, SPACE,
@@ -38,7 +38,7 @@ function TxRow({ tx, isRTL }: { tx: WalletTransaction; isRTL: boolean }) {
   return (
     <View style={[styles.txRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
       <View style={[styles.txIcon, { backgroundColor: isCredit ? '#ECFDF5' : BRAND.RED_LIGHT }]}>
-        <Ionicons name={iconName as any} size={20} color={iconColor} />
+        <AppIcon name={iconName} size={20} color={iconColor} />
       </View>
       <View style={[styles.txDetails, { alignItems: isRTL ? 'flex-end' : 'flex-start' }]}>
         <Text style={[styles.txLabel, { textAlign: isRTL ? 'right' : 'left' }]} numberOfLines={1}>
@@ -166,7 +166,7 @@ export default function WalletScreen() {
                   end={{ x: 1, y: 1 }}
                   style={styles.addBtnGrad}
                 >
-                  <Ionicons name="add-circle-outline" size={18} color="#fff" />
+                  <AppIcon name="add-circle-outline" size={18} color="#fff" />
                   <Text style={styles.addBtnText}>
                     {isRTL ? 'إضافة رصيد' : 'Ajouter'}
                   </Text>
@@ -221,7 +221,7 @@ export default function WalletScreen() {
               </View>
             ) : transactions.length === 0 ? (
               <EmptyState
-                icon={<Ionicons name="wallet-outline" size={80} color={BRAND.TEXT3} />}
+                icon={<AppIcon name="wallet-outline" size={80} color={BRAND.TEXT3} />}
                 title={isRTL ? 'لا توجد معاملات' : 'Aucune transaction'}
                 subtitle={isRTL ? 'ستظهر معاملاتك هنا' : 'Vos transactions apparaîtront ici'}
               />

@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Ionicons } from '@/components/ui/Ionicons';
+import { AppIcon } from '@/components/ui/AppIcon';
 import { AppSearchBar } from '../../components/ui/AppSearchBar';
 import { BRAND, FONTS } from '../../constants/brand';
 import { useLangStore } from '../../store/languageStore';
@@ -51,7 +51,7 @@ export default function FAQScreen() {
           style={styles.backButton}
           onPress={() => (router.canGoBack() ? router.back() : router.replace('/(tabs)/profile'))}
         >
-          <Ionicons name={backArrow(isRTL)} size={22} color="#1E293B" />
+          <AppIcon name={backArrow(isRTL)} size={22} color="#1E293B" />
         </Pressable>
         <Text style={styles.headerTitle}>
           {isAr ? '\u0627\u0644\u0623\u0633\u0626\u0644\u0629 \u0627\u0644\u0634\u0627\u0626\u0639\u0629' : 'Questions frequentes'}
@@ -119,7 +119,7 @@ export default function FAQScreen() {
                           <Text style={[styles.faqQuestion, { textAlign: dirText(isRTL) }]}>
                             {question}
                           </Text>
-                          <Ionicons
+                          <AppIcon
                             name={isOpen ? 'chevron-up' : 'chevron-down'}
                             size={16}
                             color="#94A3B8"
@@ -148,14 +148,14 @@ export default function FAQScreen() {
           </Text>
           <View style={[styles.footerRow, { flexDirection: dirRow(isRTL) }]}>
             <Pressable style={[styles.footerBtn, styles.btnWhatsapp]} onPress={handleWhatsappPress}>
-              <Ionicons name="logo-whatsapp" size={18} color="#FFFFFF" />
+              <AppIcon name="logo-whatsapp" size={18} color="#FFFFFF" />
               <Text style={styles.btnTxtWhite}>WhatsApp</Text>
             </Pressable>
             <Pressable
               style={[styles.footerBtn, styles.btnTicket]}
               onPress={() => router.push('/(flows)/support-ticket')}
             >
-              <Ionicons name="information-circle-outline" size={18} color="#EF4444" />
+              <AppIcon name="information-circle-outline" size={18} color="#EF4444" />
               <Text style={styles.btnTxtRed}>
                 {isAr ? '\u062a\u0630\u0643\u0631\u0629 \u062f\u0639\u0645' : 'Support Ticket'}
               </Text>

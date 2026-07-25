@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Ionicons } from '@/components/ui/Ionicons';
+import { AppIcon } from '@/components/ui/AppIcon';
 import { BRAND, FONTS } from '../../constants/brand';
 import { useAuthStore } from '../../store/authStore';
 import { useUpdateProfile } from '../../hooks/mutations/useAuth';
@@ -48,7 +48,7 @@ export default function NotificationSettingsScreen() {
           style={styles.backButton}
           onPress={() => (router.canGoBack() ? router.back() : router.replace('/(tabs)/profile'))}
         >
-          <Ionicons name={backArrow(isRTL)} size={22} color="#1E293B" />
+          <AppIcon name={backArrow(isRTL)} size={22} color="#1E293B" />
         </Pressable>
         <Text style={styles.headerTitle}>
           {isAr ? 'إعدادات الإشعارات' : 'Paramètres des notifications'}

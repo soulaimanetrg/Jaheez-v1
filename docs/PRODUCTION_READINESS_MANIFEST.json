@@ -57,7 +57,12 @@
     "051_strict_customer_auth_onboarding.sql",
     "052_temporary_wasender_auth_hook.sql",
     "053_phone_password_customer_auth.sql",
-    "054_customer_otp_demo_mode.sql"
+    "054_customer_otp_demo_mode.sql",
+    "055_atomic_promo_and_claim_offer.sql",
+    "056_zone_neighbors_and_service_fee.sql",
+    "057_secure_customer_registration_otp.sql",
+    "058_customer_auth_continuation.sql",
+    "059_checkout_request_bound_idempotency.sql"
   ],
   "required_staging_gates": [
     "preflight",
@@ -81,6 +86,7 @@
     "Backend unit/integration tests",
     "Backend production build",
     "Admin production build",
+    "Customer app cart/UI tests",
     "Customer app TypeScript check",
     "Driver app TypeScript check",
     "Staging tool syntax checks",

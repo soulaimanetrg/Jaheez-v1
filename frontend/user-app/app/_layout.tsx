@@ -98,6 +98,12 @@ function useSupabaseAuthInit() {
 
   useEffect(() => {
     setLoading(true);
+    const authTimeout = setTimeout(() => {
+      if (useAuthStore.getState().isLoading) {
+        setLoading(false);
+      }
+    }, 3000);
+
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (session?.user) {
         try { setUser(await loadProfile()); }
@@ -121,7 +127,7 @@ function useSupabaseAuthInit() {
       if (state === 'active') { supabase.auth.startAutoRefresh(); loadProfile().then(setUser).catch(() => undefined); } else supabase.auth.stopAutoRefresh();
     });
     if (Platform.OS !== 'web') supabase.auth.startAutoRefresh();
-    return () => { subscription.unsubscribe(); appState.remove(); if (Platform.OS !== 'web') supabase.auth.stopAutoRefresh(); };
+    return () => { clearTimeout(authTimeout); subscription.unsubscribe(); appState.remove(); if (Platform.OS !== 'web') supabase.auth.stopAutoRefresh(); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 }

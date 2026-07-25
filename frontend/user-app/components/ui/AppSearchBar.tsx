@@ -8,7 +8,7 @@ import {
   View,
   ViewStyle,
 } from 'react-native';
-import { Ionicons } from './Ionicons';
+import { AppIcon } from './AppIcon';
 import { BRAND, FONTS } from '../../constants/brand';
 
 type AppSearchBarProps = {
@@ -20,7 +20,7 @@ type AppSearchBarProps = {
   onClear?: () => void;
   showClear?: boolean;
   showSubmit?: boolean;
-  submitIcon?: React.ComponentProps<typeof Ionicons>['name'];
+  submitIcon?: React.ComponentProps<typeof AppIcon>['name'];
   accessibilityLabel: string;
   style?: StyleProp<ViewStyle>;
   inputProps?: Omit<TextInputProps, 'value' | 'onChangeText' | 'placeholder' | 'style'>;
@@ -44,7 +44,7 @@ export function AppSearchBar({
 }: AppSearchBarProps) {
   return (
     <View style={[styles.searchBar, isRTL && styles.searchBarRtl, style]}>
-      <Ionicons name="search-outline" size={20} color={BRAND.TEXT2} />
+      <AppIcon name="search-outline" size={20} color={BRAND.TEXT2} />
       <TextInput
         ref={inputRef}
         value={value}
@@ -65,7 +65,7 @@ export function AppSearchBar({
           accessibilityRole="button"
           accessibilityLabel="Clear search"
         >
-          <Ionicons name="close-circle" size={18} color={BRAND.TEXT3} />
+          <AppIcon name="close-circle" size={18} color={BRAND.TEXT3} />
         </Pressable>
       ) : null}
       {showSubmit && onSubmit ? (
@@ -75,7 +75,7 @@ export function AppSearchBar({
           accessibilityRole="button"
           accessibilityLabel={accessibilityLabel}
         >
-          <Ionicons name={submitIcon} size={18} color={BRAND.SURFACE} />
+          <AppIcon name={submitIcon} size={18} color={BRAND.SURFACE} />
         </Pressable>
       ) : null}
     </View>

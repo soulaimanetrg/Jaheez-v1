@@ -13,7 +13,8 @@ import {
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Ionicons } from '@/components/ui/Ionicons';
+import { AppIcon } from '@/components/ui/AppIcon';
+import { FavoriteButton } from '@/components/ui/FavoriteButton';
 import { BRAND, FONTS, LAYOUT } from '../../constants/brand';
 import { ASSETS } from '../../constants/assets';
 import { formatDh } from '../../lib/money';
@@ -489,11 +490,11 @@ export default function HomeScreen() {
               onPress={() => router.push('/(flows)/addresses' as any)}
               accessibilityLabel={headerAddressLabel}
             >
-              <Ionicons name="location" size={14} color={BRAND.RED} />
+              <AppIcon name="location" size={14} color={BRAND.RED} />
               <Text style={styles.locationText} numberOfLines={1}>
                 {headerAddressLabel}
               </Text>
-              <Ionicons name="chevron-down" size={13} color={BRAND.TEXT2} />
+              <AppIcon name="chevron-down" size={13} color={BRAND.TEXT2} />
             </HapticTab>
           </Reanimated.View>
 
@@ -504,7 +505,7 @@ export default function HomeScreen() {
               onPress={() => router.push('/(flows)/notifications')}
               accessibilityLabel={t.notifications}
             >
-              <Ionicons name="notifications-outline" size={22} color={BRAND.RED} />
+              <AppIcon name="notifications-outline" size={22} color={BRAND.RED} />
               {unreadNotifCount > 0 && (
                 <View style={styles.headerNotifBadge}>
                   <Text style={styles.headerNotifBadgeTxt}>{unreadNotifCount}</Text>
@@ -546,7 +547,7 @@ export default function HomeScreen() {
 
                 {maintenanceMessage ? (
           <View style={[styles.systemBanner, { flexDirection: dirRow(isRTL) }]}>
-            <Ionicons name="alert-circle-outline" size={18} color={BRAND.WARN} />
+            <AppIcon name="alert-circle-outline" size={18} color={BRAND.WARN} />
             <Text style={[styles.systemBannerText, { textAlign: dirText(isRTL) }]} numberOfLines={2}>
               {maintenanceMessage}
             </Text>
@@ -668,7 +669,7 @@ export default function HomeScreen() {
                         />
                       ) : (
                         <View style={[styles.continueStoreImg, styles.imagePlaceholder]}>
-                          <Ionicons name="storefront-outline" size={22} color={BRAND.TEXT3} />
+                          <AppIcon name="storefront-outline" size={22} color={BRAND.TEXT3} />
                         </View>
                       )}
                       <View style={[styles.continueDetails, { alignItems: dirItems(isRTL) }]}>
@@ -740,7 +741,7 @@ export default function HomeScreen() {
                   style={styles.seeAllLink}
                   accessibilityLabel={localT.viewAll}
                 >
-                  <Ionicons name={isRTL ? 'arrow-back' : 'arrow-forward'} size={20} color={BRAND.TEXT} />
+                  <AppIcon name={isRTL ? 'arrow-back' : 'arrow-forward'} size={20} color={BRAND.TEXT} />
                 </Pressable>
               </View>
 
@@ -790,26 +791,21 @@ export default function HomeScreen() {
                             <Image source={{ uri: storeCover }} style={styles.storeCoverImg} contentFit="cover" accessibilityLabel={storeName} />
                           ) : (
                             <View style={[styles.storeCoverImg, styles.imagePlaceholder]}>
-                              <Ionicons name="storefront-outline" size={28} color={BRAND.TEXT3} />
+                              <AppIcon name="storefront-outline" size={28} color={BRAND.TEXT3} />
                             </View>
                           )}
 
                           {!schedule.isOpen ? <View pointerEvents="none" style={styles.storeClosedVeil} /> : null}
-                          <Pressable
+                          <FavoriteButton
+                            isFavorite={isFavorite}
+                            onToggle={() => void handleToggleFavorite(storeId)}
+                            size={21}
                             style={styles.favoriteBtn}
-                            onPress={(event) => {
-                              event.stopPropagation();
-                              void handleToggleFavorite(storeId);
-                            }}
-                            accessibilityRole="button"
-                            accessibilityLabel={isFavorite ? 'Remove from favorites' : 'Add to favorites'}
-                          >
-                            <Ionicons name={isFavorite ? 'heart' : 'heart-outline'} size={21} color={isFavorite ? BRAND.RED : BRAND.TEXT3} />
-                          </Pressable>
+                          />
 
                                                     {!schedule.isOpen ? (
                             <View style={[styles.timePill, { flexDirection: dirRow(isRTL) }]}>
-                              <Ionicons name="moon" size={12} color={BRAND.SURFACE} />
+                              <AppIcon name="moon" size={12} color={BRAND.SURFACE} />
                               <Text style={styles.timePillText}>{statusText}</Text>
                             </View>
                           ) : null}
@@ -829,7 +825,7 @@ export default function HomeScreen() {
                             {deliveryTime && rating ? <Text style={styles.metaDot}>.</Text> : null}
                             {rating ? (
                               <View style={[styles.metaItem, { flexDirection: dirRow(isRTL) }]}>
-                                <Ionicons name="star" size={12} color={BRAND.YELLOW_DARK} />
+                                <AppIcon name="star" size={12} color={BRAND.YELLOW_DARK} />
                                 <Text style={styles.metaText}>{rating}</Text>
                               </View>
                             ) : null}
@@ -855,7 +851,7 @@ export default function HomeScreen() {
                   style={styles.seeAllLink}
                   accessibilityLabel={localT.viewAll}
                 >
-                  <Ionicons name={isRTL ? 'arrow-back' : 'arrow-forward'} size={20} color={BRAND.TEXT} />
+                  <AppIcon name={isRTL ? 'arrow-back' : 'arrow-forward'} size={20} color={BRAND.TEXT} />
                 </Pressable>
               </View>
 
@@ -908,26 +904,21 @@ export default function HomeScreen() {
                             />
                           ) : (
                             <View style={[styles.promoStoreImage, styles.imagePlaceholder]}>
-                              <Ionicons name="storefront-outline" size={30} color={BRAND.TEXT3} />
+                              <AppIcon name="storefront-outline" size={30} color={BRAND.TEXT3} />
                             </View>
                           )}
 
                           {!schedule.isOpen ? <View pointerEvents="none" style={styles.storeClosedVeil} /> : null}
-                          <Pressable
+                          <FavoriteButton
+                            isFavorite={isFavorite}
+                            onToggle={() => void handleToggleFavorite(storeId)}
+                            size={21}
                             style={styles.favoriteBtn}
-                            onPress={(event) => {
-                              event.stopPropagation();
-                              void handleToggleFavorite(storeId);
-                            }}
-                            accessibilityRole="button"
-                            accessibilityLabel={isFavorite ? 'Remove from favorites' : 'Add to favorites'}
-                          >
-                            <Ionicons name={isFavorite ? 'heart' : 'heart-outline'} size={21} color={isFavorite ? BRAND.RED : BRAND.TEXT3} />
-                          </Pressable>
+                          />
 
                           {!schedule.isOpen ? (
                             <View style={[styles.promoClosedPill, { flexDirection: dirRow(isRTL) }]}>
-                              <Ionicons name="moon" size={12} color={BRAND.SURFACE} />
+                              <AppIcon name="moon" size={12} color={BRAND.SURFACE} />
                               <Text style={styles.timePillText}>{statusText}</Text>
                             </View>
                           ) : null}
@@ -950,7 +941,7 @@ export default function HomeScreen() {
                             {deliveryTime && rating ? <Text style={styles.metaDot}>.</Text> : null}
                             {rating ? (
                               <View style={[styles.metaItem, { flexDirection: dirRow(isRTL) }]}>
-                                <Ionicons name="star" size={12} color={BRAND.YELLOW_DARK} />
+                                <AppIcon name="star" size={12} color={BRAND.YELLOW_DARK} />
                                 <Text style={styles.metaText}>{rating}</Text>
                               </View>
                             ) : null}

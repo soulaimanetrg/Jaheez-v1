@@ -1,80 +1,101 @@
-// ─────────────────────────────────────────────────────
-// JAHEEZ — Root Entry Point
-//
-// This file handles routing decisions AND renders a
-// branded splash inline while auth state is loading.
-//
-// Rendering inline (instead of redirecting to a separate
-// splash screen) keeps the auth-store subscription alive
-// so the redirect fires immediately when isLoading → false.
-// ─────────────────────────────────────────────────────
-
-import React, { useEffect, useState } from 'react';
+import { useEventListener } from 'expo';
 import { Redirect } from 'expo-router';
-import { ActivityIndicator, Image, Platform, StyleSheet, View } from 'react-native';
-import { useAuthStore } from '../store/authStore';
-import { routeForCustomer } from '../features/auth/services/authApi';
+import { StatusBar } from 'expo-status-bar';
+import { useEffect, useState } from 'react';
+import { Image, Platform, StyleSheet, View } from 'react-native';
+import { useVideoPlayer, VideoView } from 'expo-video';
+
 import { BRAND } from '../constants/brand';
-import { ASSETS } from '../constants/assets';
-import { hasSeenWelcome } from '../features/auth/welcomeState';
+import { routeForCustomer } from '../features/auth/services/authApi';
+import { useAuthStore } from '../store/authStore';
+
+const SPLASH_IMAGE = require('../assets/images/splash_first.png');
+const SPLASH_VIDEO = require('../assets/videos/splash_animation.mp4');
 
 export default function RootIndex() {
-  const isLoading = useAuthStore(s => s.isLoading);
-  const isAuth    = useAuthStore(s => s.isAuthenticated);
-  const user      = useAuthStore(s => s.user);
-  const [welcomeChecked,setWelcomeChecked]=useState(false);
-  const [seenWelcome,setSeenWelcome]=useState(true);
-  useEffect(()=>{hasSeenWelcome().then(seen=>{setSeenWelcome(seen);setWelcomeChecked(true)}).catch(()=>setWelcomeChecked(true))},[]);
+  const isLoading = useAuthStore(state => state.isLoading);
+  const isAuthenticated = useAuthStore(state => state.isAuthenticated);
+  const user = useAuthStore(state => state.user);
+  const [animationFinished, setAnimationFinished] = useState(Platform.OS === 'web');
+  const [firstFrameRendered, setFirstFrameRendered] = useState(false);
 
-  // While checking auth, show branded splash inline
-  if (isLoading || !welcomeChecked) {
-    if (Platform.OS === 'web') {
-      return (
-        <View style={styles.webLoading} />
-      );
+  const player = useVideoPlayer(SPLASH_VIDEO, videoPlayer => {
+    videoPlayer.loop = false;
+    videoPlayer.muted = true;
+    videoPlayer.play();
+  });
+
+  useEventListener(player, 'playToEnd', () => setAnimationFinished(true));
+  useEventListener(player, 'statusChange', ({ status }) => {
+    if (status === 'error') setAnimationFinished(true);
+  });
+
+  // Fallback safety timeout: guarantee transition even if video event doesn't fire
+  useEffect(() => {
+    if (animationFinished) return;
+    const timer = setTimeout(() => {
+      setAnimationFinished(true);
+    }, 2500);
+    return () => clearTimeout(timer);
+  }, [animationFinished]);
+
+  // Ensure player playback initiates
+  useEffect(() => {
+    if (player && !player.playing) {
+      try {
+        player.play();
+      } catch {
+        setAnimationFinished(true);
+      }
     }
+  }, [player]);
+
+  if (!animationFinished || isLoading) {
+    if (Platform.OS === 'web') return <View style={styles.webLoading} />;
+
     return (
-      <View style={styles.splash} accessibilityLabel="Jaheez splash screen">
-        <Image
-          source={ASSETS.branding.logo_custom}
-          style={styles.logo}
-          resizeMode="contain"
-          accessibilityLabel="Jaheez logo"
+      <View style={styles.splash} accessibilityLabel="Jaheez animated splash screen">
+        <StatusBar hidden />
+        <VideoView
+          player={player}
+          style={styles.media}
+          contentFit="cover"
+          nativeControls={false}
+          allowsPictureInPicture={false}
+          allowsVideoFrameAnalysis={false}
+          onFirstFrameRender={() => setFirstFrameRendered(true)}
+          accessibilityLabel="Jaheez logo animation"
         />
-        <ActivityIndicator
-          size="small"
-          color={BRAND.RED}
-          style={styles.loader}
-        />
+        {!firstFrameRendered && (
+          <Image
+            source={SPLASH_IMAGE}
+            style={styles.media}
+            resizeMode="cover"
+            accessibilityLabel="Jaheez logo"
+          />
+        )}
       </View>
     );
   }
 
-  // Route based on auth state
-  if (isAuth && user) return <Redirect href={routeForCustomer(user) as any} />;
-  if (!seenWelcome) return <Redirect href="/(auth)/welcome" />;
+  if (isAuthenticated && user) {
+    return <Redirect href={routeForCustomer(user) as never} />;
+  }
   return <Redirect href="/(auth)/login" />;
 }
 
 const styles = StyleSheet.create({
   splash: {
     flex: 1,
-    backgroundColor: BRAND.YELLOW,
-    alignItems: 'center',
-    justifyContent: 'center',
+    backgroundColor: BRAND.RED,
   },
-  logo: {
-    width: 180,
-    height: 72,
-    tintColor: BRAND.RED,
-  },
-  loader: {
-    marginTop: 32,
+  media: {
+    ...StyleSheet.absoluteFillObject,
+    width: '100%',
+    height: '100%',
   },
   webLoading: {
     flex: 1,
-    backgroundColor: '#0A0A12',
-    alignItems: 'center',
-    justifyContent: 'center',
+    backgroundColor: BRAND.BG,
   },
 });

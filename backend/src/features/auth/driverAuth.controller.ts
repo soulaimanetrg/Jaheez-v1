@@ -10,6 +10,12 @@ export class DriverAuthController {
    */
   driverLogin = async (req: Request, res: Response, next: NextFunction) => {
     try {
+      if (req.body && typeof req.body === 'object' && 'otp_proof' in req.body) {
+        return res.status(410).json({
+          error: 'Legacy driver OTP login is disabled. Use CIN and password provided by JAHEEZ administration.',
+          error_code: 'legacy_driver_otp_login_disabled',
+        });
+      }
       const validated = driverLoginSchema.safeParse(req.body);
       if (!validated.success) {
         return res.status(400).json({

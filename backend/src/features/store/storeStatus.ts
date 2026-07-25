@@ -159,6 +159,15 @@ export function getStoreScheduleStatus(openingHours: any): ScheduleStatus {
   return { isOpen: false, nextOpening: null };
 }
 
+export function getStoreClosesAt(store: any): string | null {
+  if (!store || store.is_open === false) return null;
+  const schedule = normalizeOpeningHours(store.opening_hours);
+  if (Object.keys(schedule).length === 0) return null;
+  const casablancaNow = new Date(new Date().toLocaleString('en-US', { timeZone: 'Africa/Casablanca' }));
+  const today = schedule[DAYS_KEYS[casablancaNow.getDay()]];
+  return today && !today.is_closed && typeof today.close === 'string' ? today.close : null;
+}
+
 export function isStoreCurrentlyOpen(store: any): { isOpen: boolean; labelFr: string; labelAr: string } {
   if (!store || store.is_open === false) {
     return { isOpen: false, labelFr: "Fermé temporairement", labelAr: "مغلق مؤقتاً" };

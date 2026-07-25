@@ -14,7 +14,8 @@ import Animated, {
   withDelay,
   Easing,
 } from 'react-native-reanimated';
-import { Ionicons } from '@expo/vector-icons';
+import { AppIcon } from '@/components/ui/AppIcon';
+import { FavoriteButton } from '@/components/ui/FavoriteButton';
 import { BRAND, FONTS } from '../../constants/brand';
 
 interface StoreListCardProps {
@@ -137,22 +138,16 @@ export const StoreListCard: React.FC<StoreListCardProps> = React.memo(({
 
         {!isOpen ? <View pointerEvents="none" style={styles.closedVeil} /> : null}
 
-        <Pressable
-          onPress={(event) => {
-            event.stopPropagation();
-            onToggleFavorite();
-          }}
-          hitSlop={8}
+        <FavoriteButton
+          isFavorite={isFavorite}
+          onToggle={onToggleFavorite}
+          size={21}
           style={styles.favoriteBtn}
-          accessibilityRole="button"
-          accessibilityLabel={isFavorite ? 'Remove from favorites' : 'Add to favorites'}
-        >
-          <Ionicons name={isFavorite ? 'heart' : 'heart-outline'} size={21} color={isFavorite ? BRAND.RED : BRAND.TEXT3} />
-        </Pressable>
+        />
 
         {!isOpen ? (
           <View style={[styles.closedPill, { flexDirection: flexDir }]}>
-            <Ionicons name="moon" size={12} color={BRAND.SURFACE} />
+            <AppIcon name="moon" size={12} color={BRAND.SURFACE} />
             <Text style={styles.closedText}>{closedLabel}</Text>
           </View>
         ) : null}

@@ -5,7 +5,7 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Ionicons } from '@/components/ui/Ionicons';
+import { AppIcon } from '@/components/ui/AppIcon';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BRAND, FONTS, SHADOW, SHADOW_SM } from '../../constants/brand';
 import { ASSETS } from '../../constants/assets';
@@ -89,7 +89,7 @@ export default function ProfileScreen() {
               onPress={() => router.push('/(flows)/notifications')}
               accessibilityLabel={t.notifications}
             >
-              <Ionicons name="notifications-outline" size={22} color={BRAND.TEXT} />
+              <AppIcon name="notifications-outline" size={22} color={BRAND.TEXT} />
               {/* Badge */}
               <View style={styles.notifBadge}>
                 <Text style={styles.notifBadgeTxt}>3</Text>
@@ -100,7 +100,7 @@ export default function ProfileScreen() {
               onPress={() => router.push('/(flows)/profile-edit')}
               accessibilityLabel={t.editProfile}
             >
-              <Ionicons name="person-outline" size={22} color={BRAND.TEXT} />
+              <AppIcon name="person-outline" size={22} color={BRAND.TEXT} />
             </Pressable>
           </View>
         </View>
@@ -125,7 +125,7 @@ export default function ProfileScreen() {
                 </View>
               )}
               <Pressable style={styles.camBadge} accessibilityLabel={t.editProfile}>
-                <Ionicons name="camera" size={12} color="#666" />
+                <AppIcon name="camera" size={12} color="#666" />
               </Pressable>
             </View>
 
@@ -137,7 +137,7 @@ export default function ProfileScreen() {
                 </Text>
                 {isPlusMember && (
                   <View style={styles.starBadge}>
-                    <Ionicons name="star" size={12} color="#FBBF24" />
+                    <AppIcon name="star" size={12} color="#FBBF24" />
                   </View>
                 )}
               </View>
@@ -151,7 +151,7 @@ export default function ProfileScreen() {
             </View>
 
             {/* Right Chevron */}
-            <Ionicons name={rowChevron as any} size={20} color="rgba(255,255,255,0.7)" />
+            <AppIcon name={rowChevron} size={20} color="rgba(255,255,255,0.7)" />
           </LinearGradient>
         </Pressable>
 
@@ -159,7 +159,7 @@ export default function ProfileScreen() {
         <View style={styles.promoBanner}>
           <View style={[styles.promoLeft, { flexDirection: dirRow(isRTL) }]}>
             <View style={styles.promoGiftIcon}>
-              <Ionicons name="gift" size={22} color={BRAND.RED} />
+              <AppIcon name="gift" size={22} color={BRAND.RED} />
             </View>
             <View style={[styles.promoTextWrap, { alignItems: dirItems(isRTL) }]}>
               <Text style={[styles.promoTitle, { textAlign: dirText(isRTL) }]}>
@@ -172,7 +172,7 @@ export default function ProfileScreen() {
                 <Text style={styles.promoLink}>
                   {isRTL ? 'اكتشف المزايا' : lang === 'fr' ? 'Découvrir les avantages' : 'Discover benefits'}
                 </Text>
-                <Ionicons name={rowChevron as any} size={14} color={BRAND.RED} />
+                <AppIcon name={rowChevron} size={14} color={BRAND.RED} />
               </View>
             </View>
           </View>
@@ -181,7 +181,7 @@ export default function ProfileScreen() {
             style={styles.promoImage}
             resizeMode="contain"
           />
-          <Ionicons name={rowChevron as any} size={18} color={BRAND.TEXT3} style={styles.promoChevron} />
+          <AppIcon name={rowChevron} size={18} color={BRAND.TEXT3} style={styles.promoChevron} />
         </View>
 
         {/* ─── MENU LIST ─── */}
@@ -199,12 +199,12 @@ export default function ProfileScreen() {
               accessibilityLabel={item.label}
             >
               <View style={[styles.menuIcon, { backgroundColor: `${item.color}14` }]}>
-                <Ionicons name={item.icon as any} size={20} color={item.color} />
+                <AppIcon name={item.icon} size={20} color={item.color} />
               </View>
               <View style={[styles.menuCenter, { alignItems: dirItems(isRTL) }]}>
                 <Text style={[styles.menuTxt, { textAlign: dirText(isRTL) }]}>{item.label}</Text>
               </View>
-              <Ionicons name={rowChevron as any} size={16} color={BRAND.TEXT3} />
+              <AppIcon name={rowChevron} size={16} color={BRAND.TEXT3} />
             </Pressable>
           ))}
         </View>
@@ -216,7 +216,7 @@ export default function ProfileScreen() {
         >
           <View style={[styles.supportInner, { flexDirection: dirRow(isRTL) }]}>
             <View style={styles.whatsappIcon}>
-              <Ionicons name="logo-whatsapp" size={24} color="#25D366" />
+              <AppIcon name="logo-whatsapp" size={24} color="#25D366" />
             </View>
             <View style={[styles.supportTextWrap, { alignItems: dirItems(isRTL) }]}>
               <Text style={[styles.supportTitle, { textAlign: dirText(isRTL) }]}>
@@ -226,7 +226,7 @@ export default function ProfileScreen() {
                 {isRTL ? 'تواصل معنا عبر واتساب للدعم السريع' : lang === 'fr' ? 'Contactez-nous via WhatsApp pour une aide rapide' : 'Contact us via WhatsApp for quick support'}
               </Text>
             </View>
-            <Ionicons name={rowChevron as any} size={16} color={BRAND.TEXT3} />
+            <AppIcon name={rowChevron} size={16} color={BRAND.TEXT3} />
           </View>
         </Pressable>
 
@@ -237,13 +237,13 @@ export default function ProfileScreen() {
         >
           <View style={[styles.settingsRowInner, { flexDirection: dirRow(isRTL) }]}>
             <View style={[styles.menuIcon, { backgroundColor: `${BRAND.BLUE}14` }]}>
-              <Ionicons name="globe-outline" size={20} color={BRAND.BLUE} />
+              <AppIcon name="globe-outline" size={20} color={BRAND.BLUE} />
             </View>
             <View style={[styles.menuCenter, { alignItems: dirItems(isRTL) }]}>
               <Text style={[styles.menuTxt, { textAlign: dirText(isRTL) }]}>{t.language}</Text>
               <Text style={[styles.settingsSub, { textAlign: dirText(isRTL) }]}>{languageLabel}</Text>
             </View>
-            <Ionicons name={rowChevron as any} size={16} color={BRAND.TEXT3} />
+            <AppIcon name={rowChevron} size={16} color={BRAND.TEXT3} />
           </View>
         </Pressable>
 
@@ -254,18 +254,18 @@ export default function ProfileScreen() {
         >
           <View style={[styles.settingsRowInner, { flexDirection: dirRow(isRTL) }]}>
             <View style={[styles.menuIcon, { backgroundColor: `${BRAND.TEXT3}14` }]}>
-              <Ionicons name="settings-outline" size={20} color={BRAND.TEXT3} />
+              <AppIcon name="settings-outline" size={20} color={BRAND.TEXT3} />
             </View>
             <View style={[styles.menuCenter, { alignItems: dirItems(isRTL) }]}>
               <Text style={[styles.menuTxt, { textAlign: dirText(isRTL) }]}>{t.settings}</Text>
             </View>
-            <Ionicons name={rowChevron as any} size={16} color={BRAND.TEXT3} />
+            <AppIcon name={rowChevron} size={16} color={BRAND.TEXT3} />
           </View>
         </Pressable>
 
         {/* ─── LOGOUT ─── */}
         <Pressable style={[styles.logoutBtn, { flexDirection: dirRow(isRTL) }]} onPress={doLogout} accessibilityLabel={t.logout}>
-          <Ionicons name="log-out-outline" size={20} color={BRAND.RED} />
+          <AppIcon name="log-out-outline" size={20} color={BRAND.RED} />
           <Text style={styles.logoutTxt}>{t.logout}</Text>
         </Pressable>
 

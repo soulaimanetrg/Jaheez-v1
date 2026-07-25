@@ -17,7 +17,7 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Ionicons } from '@/components/ui/Ionicons';
+import { AppIcon } from '@/components/ui/AppIcon';
 import { AppSearchBar } from '../../components/ui/AppSearchBar';
 import { BRAND, FONTS } from '../../constants/brand';
 import { useCreateSupportTicket } from '../../hooks/mutations/useSupportMutations';
@@ -72,7 +72,7 @@ function AccordionFaqItem({ item, isOpen, onToggle, currentIsRTL }: { item: { q:
         style={[styles.faqHeader, { flexDirection: currentIsRTL ? 'row' : 'row-reverse' }]}
         onPress={onToggle}
       >
-        <Ionicons name={isOpen ? 'chevron-up' : 'chevron-down'} size={14} color="#64748B" />
+        <AppIcon name={isOpen ? 'chevron-up' : 'chevron-down'} size={14} color="#64748B" />
         <Text style={[styles.faqQuestion, { textAlign: currentIsRTL ? 'right' : 'left' }]}>{item.q}</Text>
       </Pressable>
       {isOpen && (
@@ -191,7 +191,7 @@ export default function SupportTicketScreen() {
       <View style={[styles.root, styles.successRoot]}>
         <View style={[styles.successBg, { paddingTop: insets.top }]}>
           <View style={styles.successIcon}>
-            <Ionicons name="checkmark-circle" size={64} color={BRAND.GREEN} />
+            <AppIcon name="checkmark-circle" size={64} color={BRAND.GREEN} />
           </View>
           <Text style={styles.successTitle}>
             {lang === 'ar' ? 'تم إرسال تذكرتك!' : 'Demande envoyée !'}
@@ -228,7 +228,7 @@ export default function SupportTicketScreen() {
       {/* ── Header ── */}
       <View style={[styles.header, { paddingTop: insets.top + 10, flexDirection: dirRow(isRTL) }]}>
         <Pressable style={styles.backBtn} onPress={handleBack}>
-          <Ionicons name={backArrow(isRTL)} size={22} color="#1E293B" />
+          <AppIcon name={backArrow(isRTL)} size={22} color="#1E293B" />
         </Pressable>
         <View style={{ width: 40 }} />
       </View>
@@ -242,7 +242,7 @@ export default function SupportTicketScreen() {
           {/* Title & Tagline */}
           <View style={[styles.titleSection, { alignItems: dirItems(isRTL) }]}>
             <View style={[styles.titleRow, { flexDirection: dirRow(isRTL) }]}>
-              <Ionicons name="information-circle" size={24} color="#1E293B" style={isRTL ? { marginLeft: 8 } : { marginRight: 8 }} />
+              <AppIcon name="information-circle" size={24} color="#1E293B" style={isRTL ? { marginLeft: 8 } : { marginRight: 8 }} />
               <Text style={styles.titleText}>{helpCenterText}</Text>
             </View>
             <Text style={styles.taglineText}>{tagLineText}</Text>
@@ -270,7 +270,7 @@ export default function SupportTicketScreen() {
                 {/* WhatsApp */}
                 <Pressable style={[styles.contactCard, { backgroundColor: '#ECFDF5' }]} onPress={handleWhatsappPress}>
                   <View style={[styles.contactIconWrap, { backgroundColor: '#10B981' }]}>
-                    <Ionicons name="logo-whatsapp" size={20} color="#FFFFFF" />
+                    <AppIcon name="logo-whatsapp" size={20} color="#FFFFFF" />
                   </View>
                   <Text style={styles.contactCardTitle}>WhatsApp</Text>
                   <Text style={styles.contactCardSub}>
@@ -281,7 +281,7 @@ export default function SupportTicketScreen() {
                 {/* Live Chat */}
                 <Pressable style={[styles.contactCard, { backgroundColor: '#EFF6FF' }]} onPress={() => router.push('/(tabs)/chat')}>
                   <View style={[styles.contactIconWrap, { backgroundColor: '#3B82F6' }]}>
-                    <Ionicons name="chatbubbles" size={20} color="#FFFFFF" />
+                    <AppIcon name="chatbubbles" size={20} color="#FFFFFF" />
                   </View>
                   <Text style={styles.contactCardTitle}>Live Chat</Text>
                   <Text style={styles.contactCardSub}>
@@ -292,7 +292,7 @@ export default function SupportTicketScreen() {
                 {/* Phone Call */}
                 <Pressable style={[styles.contactCard, { backgroundColor: '#FFFBEB' }]} onPress={handleCallPress}>
                   <View style={[styles.contactIconWrap, { backgroundColor: '#F59E0B' }]}>
-                    <Ionicons name="call" size={20} color="#FFFFFF" />
+                    <AppIcon name="call" size={20} color="#FFFFFF" />
                   </View>
                   <Text style={styles.contactCardTitle}>
                     {lang === 'ar' ? 'اتصال' : lang === 'fr' ? 'Appeler' : 'Call'}
@@ -317,7 +317,7 @@ export default function SupportTicketScreen() {
               </View>
             ) : filteredFaqItems.length === 0 ? (
               <View style={styles.emptyContainer}>
-                <Ionicons name="search-outline" size={48} color="#CBD5E1" />
+                <AppIcon name="search-outline" size={48} color="#CBD5E1" />
                 <Text style={styles.emptyTxt}>
                   {lang === 'ar' ? 'لا توجد نتائج' : 'Aucun résultat trouvé'}
                 </Text>
@@ -355,7 +355,7 @@ export default function SupportTicketScreen() {
               setShowTicketForm(true);
             }}
           >
-            <Ionicons name="information-circle-outline" size={20} color="#EF4444" style={isRTL ? { marginLeft: 8 } : { marginRight: 8 }} />
+            <AppIcon name="information-circle-outline" size={20} color="#EF4444" style={isRTL ? { marginLeft: 8 } : { marginRight: 8 }} />
             <Text style={styles.bottomBtnTxt}>{sendRequestText}</Text>
           </Pressable>
         </ScrollView>
@@ -389,7 +389,7 @@ export default function SupportTicketScreen() {
                     onPress={() => setCategory(cat.id)}
                   >
                     <View style={[styles.catIconWrapInner, { backgroundColor: `${cat.color}18` }]}>
-                      <Ionicons name={cat.icon as any} size={20} color={cat.color} />
+                      <AppIcon name={cat.icon} size={20} color={cat.color} />
                     </View>
                     <Text style={[styles.catLabelText, active && { color: cat.color }]}>
                       {lang === 'ar' ? cat.label : cat.id === 'order' ? 'Commande' : cat.id === 'payment' ? 'Paiement' : cat.id === 'account' ? 'Compte' : cat.id === 'driver' ? 'Livreur' : cat.id === 'app' ? 'Technique' : 'Autre'}
